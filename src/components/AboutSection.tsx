@@ -1,8 +1,18 @@
 import React from 'react';
-import { CUSTOMER_REVIEWS, COWAY_FAQS } from '../data/cowayProducts';
-import { ShieldCheck, Award, Star, CheckCircle, Users, Truck, HeartHandshake, HelpCircle } from 'lucide-react';
+import { COWAY_FAQS } from '../data/cowayProducts';
+import { DEFAULT_CUSTOMER_REVIEWS, CustomerReviewItem } from '../data/defaultReviews';
+import { SiteSettings } from '../types/settings';
+import { ShieldCheck, Award, Star, CheckCircle, Truck, HeartHandshake, HelpCircle, CheckCircle2 } from 'lucide-react';
 
-export const AboutSection: React.FC = () => {
+interface AboutSectionProps {
+  siteSettings?: SiteSettings;
+}
+
+export const AboutSection: React.FC<AboutSectionProps> = ({ siteSettings }) => {
+  const reviews: CustomerReviewItem[] = siteSettings?.customerReviews && siteSettings.customerReviews.length > 0
+    ? siteSettings.customerReviews.filter(r => r.isActive !== false)
+    : DEFAULT_CUSTOMER_REVIEWS.filter(r => r.isActive !== false);
+
   return (
     <section id="about" className="py-16 sm:py-24 bg-slate-50 border-t border-slate-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -64,50 +74,74 @@ export const AboutSection: React.FC = () => {
         </div>
 
         {/* Customer Reviews Section */}
-        <div className="mb-16">
-          <div className="max-w-2xl mb-8">
-            <div className="text-xs font-semibold text-sky-600 uppercase tracking-wider">
-              REVIEWS · เสียงตอบรับจากผู้ใช้จริง
-            </div>
-            <h3 className="text-xl sm:text-2xl font-bold text-slate-900 mt-1">
-              ความประทับใจจากลูกค้า Coway ทั่วประเทศ
-            </h3>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {CUSTOMER_REVIEWS.map((rev) => (
-              <div
-                key={rev.id}
-                className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs space-y-4"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1">
-                    {[...Array(rev.rating)].map((_, i) => (
-                      <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
-                    ))}
-                  </div>
-                  <span className="text-[11px] text-slate-400">{rev.date}</span>
-                </div>
-
-                <p className="text-xs sm:text-sm text-slate-700 leading-relaxed italic">
-                  "{rev.comment}"
-                </p>
-
-                <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
-                  <div>
-                    <div className="font-bold text-slate-900">{rev.customerName}</div>
-                    <div className="text-slate-400">{rev.location}</div>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-[11px] font-semibold text-sky-600 bg-sky-50 px-2 py-0.5 rounded">
-                      รุ่น {rev.productName}
-                    </span>
-                  </div>
-                </div>
+        {reviews.length > 0 && (
+          <div id="reviews" className="mb-16">
+            <div className="max-w-2xl mb-8">
+              <div className="text-xs font-semibold text-sky-600 uppercase tracking-wider">
+                REVIEWS · เสียงตอบรับจากผู้ใช้จริง
               </div>
-            ))}
+              <h3 className="text-xl sm:text-2xl font-bold text-slate-900 mt-1">
+                ความประทับใจจากลูกค้า Coway ทั่วประเทศ
+              </h3>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {reviews.map((rev) => (
+                <div
+                  key={rev.id}
+                  className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-4 hover:shadow-md transition-all flex flex-col justify-between"
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1">
+                        {[...Array(rev.rating || 5)].map((_, i) => (
+                          <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
+                        ))}
+                      </div>
+                      <span className="text-[11px] text-slate-400">{rev.date}</span>
+                    </div>
+
+                    <p className="text-xs sm:text-sm text-slate-700 leading-relaxed italic">
+                      "{rev.comment}"
+                    </p>
+                  </div>
+
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2.5">
+                      {rev.avatarUrl ? (
+                        <img
+                          src={rev.avatarUrl}
+                          alt={rev.customerName}
+                          className="w-9 h-9 rounded-full object-cover border border-slate-200"
+                        />
+                      ) : (
+                        <div className="w-9 h-9 rounded-full bg-sky-100 text-sky-700 font-bold text-xs flex items-center justify-center">
+                          {rev.customerName.charAt(0) || 'C'}
+                        </div>
+                      )}
+                      <div>
+                        <div className="font-bold text-slate-900 flex items-center gap-1">
+                          <span>{rev.customerName}</span>
+                          {rev.verified !== false && (
+                            <CheckCircle2 className="w-3.5 h-3.5 text-sky-600" />
+                          )}
+                        </div>
+                        <div className="text-slate-400 text-[11px]">{rev.location}</div>
+                      </div>
+                    </div>
+                    {rev.productName && (
+                      <div className="text-right">
+                        <span className="text-[11px] font-semibold text-sky-600 bg-sky-50 px-2.5 py-1 rounded-lg">
+                          รุ่น {rev.productName}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* FAQs Accordion */}
         <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200/80 shadow-xs">
@@ -146,7 +180,8 @@ export const AboutSection: React.FC = () => {
                     </svg>
                   </span>
                 </summary>
-                <p className="mt-3 text-xs sm:text-sm leading-relaxed text-slate-600 border-t border-slate-200/60 pt-3">
+
+                <p className="mt-4 leading-relaxed text-xs sm:text-sm text-slate-600 border-t border-slate-200/60 pt-3">
                   {faq.answer}
                 </p>
               </details>
