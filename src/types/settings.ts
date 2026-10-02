@@ -18,6 +18,7 @@ export interface SiteSettings {
   phoneDisplay: string;
   lineId: string;
   lineUrl: string;
+  agentLineUrl?: string;
   facebookUrl?: string;
   facebookName?: string;
   heroBadge: string;
@@ -40,6 +41,7 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   phoneDisplay: '02-000-0000',
   lineId: '@cowaythailand',
   lineUrl: 'https://line.me/ti/p/~@cowaythailand',
+  agentLineUrl: 'https://line.me/ti/p/~@cowaythailand',
   facebookUrl: 'https://facebook.com/cowaythailand',
   facebookName: 'Coway Thailand Official Partner',
   heroBadge: 'Coway Official Subscription Partner',

@@ -36,6 +36,7 @@ import {
   Filter,
   Share2,
   Sparkles,
+  UserCheck,
 } from 'lucide-react';
 
 export type AdminMenuTab = 'dashboard' | 'products' | 'banners' | 'contact' | 'settings';
@@ -1251,6 +1252,46 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                       className="text-emerald-600 underline font-semibold flex items-center gap-0.5"
                     >
                       <span>เปิดทดสอบลิงก์</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                </div>
+
+                {/* Agent LINE Card (ลิงก์สมัครตัวแทนขาย) */}
+                <div className="bg-linear-to-br from-amber-50 to-orange-50 p-4 sm:p-5 rounded-3xl border border-amber-200 space-y-3 sm:col-span-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 text-amber-950 font-bold">
+                      <UserCheck className="w-4 h-4 text-amber-600" />
+                      <span>ลิงก์ LINE สำหรับ "สมัครตัวแทนขาย"</span>
+                    </div>
+                    <span className="text-[10px] font-semibold bg-amber-200 text-amber-900 px-2.5 py-0.5 rounded-full">
+                      แสดงผลบน Navbar, Hero และ Contact
+                    </span>
+                  </div>
+                  <p className="text-xs text-amber-800 leading-relaxed">
+                    กำหนดลิงก์ LINE หรือ LINE OA แยกเฉพาะสำหรับรับสมัครตัวแทนขาย เมื่อผู้ใช้กดปุ่ม "สมัครตัวแทนขาย" บนหน้าเว็บ จะเปิดไปยังลิงก์นี้ทันที
+                  </p>
+                  <div>
+                    <label className="block text-[11px] text-amber-900 font-semibold mb-1">
+                      ลิงก์ LINE สมัครตัวแทนขาย (เช่น https://line.me/ti/p/~@your_agent_line)
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.agentLineUrl || ''}
+                      onChange={(e) => setFormData({ ...formData, agentLineUrl: e.target.value })}
+                      placeholder={formData.lineUrl || 'https://line.me/ti/p/~@cowaythailand'}
+                      className="w-full px-3 py-2 bg-white rounded-xl border border-amber-300 focus:outline-amber-500 text-xs text-slate-900"
+                    />
+                  </div>
+                  <div className="pt-1 text-[11px] text-amber-900/80 flex items-center gap-1.5">
+                    <span>ทดสอบเปิดลิงก์:</span>
+                    <a
+                      href={formData.agentLineUrl || formData.lineUrl || 'https://line.me'}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-amber-800 hover:text-amber-950 underline font-semibold flex items-center gap-0.5"
+                    >
+                      <span>เปิดทดสอบลิงก์สมัครตัวแทนขาย</span>
                       <ExternalLink className="w-3 h-3" />
                     </a>
                   </div>

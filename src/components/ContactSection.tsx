@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Phone, MessageCircle, MapPin, Clock, Send, CheckCircle2, ShieldCheck, Mail, Sparkles } from 'lucide-react';
+import { Phone, MessageCircle, MapPin, Clock, Send, CheckCircle2, ShieldCheck, Mail, Sparkles, UserCheck } from 'lucide-react';
 import { ConsultationForm } from '../types';
 import { SiteSettings } from '../types/settings';
 
@@ -133,6 +133,31 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ siteSettings }) 
                   </div>
                 </a>
               </div>
+            </div>
+
+            {/* Agent Recruitment Highlight Card */}
+            <div className="bg-linear-to-br from-amber-50 to-orange-50 p-5 rounded-3xl border border-amber-200/80 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-amber-950 font-bold text-sm sm:text-base">
+                  <UserCheck className="w-5 h-5 text-amber-600" />
+                  <span>ร่วมงานกับเรา · สมัครตัวแทนขาย Coway</span>
+                </div>
+                <span className="text-[10px] font-semibold bg-amber-200 text-amber-900 px-2 py-0.5 rounded-md">
+                  รับสมัคร
+                </span>
+              </div>
+              <p className="text-xs text-amber-900/80 leading-relaxed">
+                สร้างรายได้เสริมหรือรายได้หลักกับแบรนด์อันดับ 1 มีทีมพี่เลี้ยงเทรนนิ่งฟรี ไม่ต้องสต็อกสินค้า ทำงานได้ทุกที่
+              </p>
+              <a
+                href={siteSettings?.agentLineUrl || siteSettings?.lineUrl || "https://line.me"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 w-full py-2.5 px-4 bg-linear-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all"
+              >
+                <MessageCircle className="w-4 h-4 text-amber-100" />
+                <span>สมัครตัวแทนขายผ่าน LINE ทันที</span>
+              </a>
             </div>
 
             {/* Service Coverage Box */}

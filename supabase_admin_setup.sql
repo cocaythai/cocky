@@ -6,6 +6,7 @@
 -- 1. เพิ่มคอลัมน์ส่วนเสริมในตาราง site_settings (ถ้ายังไม่มี)
 ALTER TABLE public.site_settings 
 ADD COLUMN IF NOT EXISTS logo_url TEXT DEFAULT '',
+ADD COLUMN IF NOT EXISTS agent_line_url TEXT DEFAULT '',
 ADD COLUMN IF NOT EXISTS facebook_url TEXT DEFAULT '',
 ADD COLUMN IF NOT EXISTS facebook_name TEXT DEFAULT '';
 

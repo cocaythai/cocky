@@ -9,6 +9,7 @@ import {
   PhoneCall,
   ChevronLeft,
   ChevronRight,
+  UserCheck,
 } from 'lucide-react';
 import { SiteSettings } from '../types/settings';
 import heroImgFallback from '../assets/images/hero_coway_kitchen_1790923059004.jpg';
@@ -98,17 +99,29 @@ export const Hero: React.FC<HeroProps> = ({
             <div className="flex flex-wrap items-center gap-3 pt-4">
               <button
                 onClick={onExploreProducts}
-                className="px-6 py-3.5 text-sm font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl transition-all shadow-md hover:shadow-lg flex items-center gap-2 cursor-pointer focus:outline-hidden"
+                className="px-5 sm:px-6 py-3.5 text-sm font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl transition-all shadow-md hover:shadow-lg flex items-center gap-2 cursor-pointer focus:outline-hidden"
               >
                 <span>ดูสินค้าทั้งหมด</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
 
+              {/* สมัครตัวแทนขาย (ตำแหน่งที่ 2 ในส่วน Hero ด้านบนสุด) */}
+              <a
+                href={siteSettings?.agentLineUrl || siteSettings?.lineUrl || "https://line.me"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-5 py-3.5 text-sm font-bold text-amber-900 bg-linear-to-r from-amber-100 via-amber-200 to-amber-100 hover:from-amber-200 hover:to-amber-300 border border-amber-300/90 rounded-xl transition-all shadow-xs hover:shadow-md flex items-center gap-2 cursor-pointer focus:outline-hidden"
+                title="สมัครเป็นตัวแทนจำหน่าย Coway รายได้ดี มีเทรนนิ่งฟรี"
+              >
+                <UserCheck className="w-4 h-4 text-amber-800" />
+                <span>สมัครตัวแทนขาย Coway</span>
+              </a>
+
               <a
                 href={`tel:${siteSettings?.phoneNumber || '020000000'}`}
-                className="px-6 py-3.5 text-sm font-semibold text-slate-800 bg-white hover:bg-slate-100 rounded-xl border border-slate-200 transition-colors shadow-xs flex items-center gap-2 cursor-pointer focus:outline-hidden"
+                className="px-5 py-3.5 text-sm font-bold text-white bg-black hover:bg-slate-800 rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer focus:outline-hidden"
               >
-                <PhoneCall className="w-4 h-4 text-sky-600" />
+                <PhoneCall className="w-4 h-4 text-white" />
                 <span>โทร {siteSettings?.phoneDisplay || '02-000-0000'}</span>
               </a>
 
@@ -116,10 +129,10 @@ export const Hero: React.FC<HeroProps> = ({
                 href={siteSettings?.lineUrl || 'https://line.me'}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-5 py-3.5 text-sm font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 rounded-xl border border-emerald-200 transition-colors"
+                className="inline-flex items-center gap-2 px-5 py-3.5 text-sm font-bold text-white bg-[#06c755] hover:bg-[#05b34c] rounded-xl transition-all shadow-md"
               >
-                <MessageCircle className="w-4 h-4 text-emerald-600" />
-                <span>แชทคุย LINE ({siteSettings?.lineId || '@cowaythailand'})</span>
+                <MessageCircle className="w-4 h-4 text-white" />
+                <span>แอด LINE</span>
               </a>
             </div>
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Phone, MessageCircle, Menu, X, ShoppingBag, ArrowRight, Settings } from 'lucide-react';
+import { Phone, MessageCircle, Menu, X, ShoppingBag, ArrowRight, Settings, UserCheck } from 'lucide-react';
 import { CowayProduct } from '../types';
 import { SiteSettings } from '../types/settings';
 
@@ -63,16 +63,16 @@ export const Navbar: React.FC<NavbarProps> = ({
             {siteSettings?.logoUrl ? (
               <img
                 src={siteSettings.logoUrl}
-                alt={siteSettings.siteName || 'COWAY'}
+                alt={siteSettings.siteName || 'COWAY THAIPLUS'}
                 className="h-8 max-w-[160px] object-contain"
               />
             ) : (
-              <div className="flex items-baseline gap-1">
-                <span className="text-2xl font-bold tracking-tight text-slate-900 group-hover:text-sky-600 transition-colors">
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-2xl font-black tracking-tight text-sky-600 transition-colors">
                   COWAY
                 </span>
-                <span className="text-xs font-semibold text-sky-600 tracking-wider">
-                  THAILAND
+                <span className="text-sm font-bold text-sky-500 tracking-wider">
+                  THAIPLUS
                 </span>
               </div>
             )}
@@ -114,23 +114,35 @@ export const Navbar: React.FC<NavbarProps> = ({
               )}
             </button>
 
-            {/* Direct Line Chat CTA */}
+            {/* Direct Line Chat CTA - Green */}
             <a
               href={siteSettings?.lineUrl || "https://line.me"}
               target="_blank"
               rel="noopener noreferrer"
-              className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors border border-emerald-200"
+              className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-[#06c755] hover:bg-[#05b34c] rounded-lg transition-all shadow-xs"
             >
-              <MessageCircle className="w-4 h-4 text-emerald-600" />
-              <span className="whitespace-nowrap">คุย LINE</span>
+              <MessageCircle className="w-4 h-4 text-white" />
+              <span className="whitespace-nowrap">แอด LINE</span>
             </a>
 
-            {/* Direct Call CTA */}
+            {/* สมัครตัวแทนขาย (ตำแหน่งที่ 1: Header Bar) */}
+            <a
+              href={siteSettings?.agentLineUrl || siteSettings?.lineUrl || "https://line.me"}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-amber-900 bg-linear-to-r from-amber-100 via-amber-200 to-amber-100 hover:from-amber-200 hover:to-amber-300 border border-amber-300/90 rounded-lg transition-all shadow-xs hover:shadow-sm shrink-0"
+              title="สมัครตัวแทนขาย Coway"
+            >
+              <UserCheck className="w-3.5 h-3.5 text-amber-800" />
+              <span className="whitespace-nowrap">สมัครตัวแทนขาย</span>
+            </a>
+
+            {/* Direct Call CTA - Black */}
             <a
               href={`tel:${siteSettings?.phoneNumber || '020000000'}`}
-              className="hidden md:inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-slate-900 hover:bg-sky-600 rounded-lg transition-colors shadow-xs whitespace-nowrap"
+              className="hidden md:inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-black hover:bg-slate-800 rounded-lg transition-colors shadow-xs whitespace-nowrap"
             >
-              <Phone className="w-3.5 h-3.5" />
+              <Phone className="w-3.5 h-3.5 text-white" />
               <span>{siteSettings?.phoneDisplay || '02-000-0000'}</span>
             </a>
 
@@ -177,22 +189,33 @@ export const Navbar: React.FC<NavbarProps> = ({
             ))}
           </div>
 
-          <div className="pt-4 mt-3 border-t border-slate-100 space-y-2">
+          <div className="pt-4 mt-3 border-t border-slate-100 space-y-2.5">
+            {/* ปุ่มสมัครตัวแทนขายบนมือถือ */}
             <a
-              href="tel:0829988998"
-              className="flex items-center justify-center gap-2 w-full py-3 px-4 bg-slate-900 text-white rounded-lg text-sm font-medium hover:bg-slate-800 transition-colors"
-            >
-              <Phone className="w-4 h-4" />
-              <span>โทรปรึกษาด่วน 082-998-8998</span>
-            </a>
-            <a
-              href="https://line.me"
+              href={siteSettings?.agentLineUrl || siteSettings?.lineUrl || "https://line.me"}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 w-full py-3 px-4 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors"
+              className="flex items-center justify-center gap-2 w-full py-3 px-4 bg-linear-to-r from-amber-500 to-amber-600 text-white rounded-xl text-sm font-bold shadow-xs hover:from-amber-600 hover:to-amber-700 transition-all"
             >
-              <MessageCircle className="w-4 h-4" />
-              <span>แชทปรึกษาทาง LINE (@cowayth)</span>
+              <UserCheck className="w-4 h-4 text-amber-100" />
+              <span>สมัครตัวแทนขาย Coway (คลิก)</span>
+            </a>
+
+            <a
+              href={`tel:${siteSettings?.phoneNumber || '020000000'}`}
+              className="flex items-center justify-center gap-2 w-full py-2.5 px-4 bg-black hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-colors shadow-xs"
+            >
+              <Phone className="w-4 h-4 text-white" />
+              <span>โทรปรึกษาด่วน {siteSettings?.phoneDisplay || '02-000-0000'}</span>
+            </a>
+            <a
+              href={siteSettings?.lineUrl || "https://line.me"}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 w-full py-2.5 px-4 bg-[#06c755] hover:bg-[#05b34c] text-white rounded-xl text-xs font-bold transition-colors shadow-xs"
+            >
+              <MessageCircle className="w-4 h-4 text-white" />
+              <span>แอด LINE ({siteSettings?.lineId || '@cowaythailand'})</span>
             </a>
           </div>
         </div>

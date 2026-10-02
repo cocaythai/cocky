@@ -286,30 +286,48 @@ export default function App() {
       <Footer onNavigate={handleNavigate} siteSettings={siteSettings} />
 
       {/* Floating Action Button (Desktop & Tablet) */}
-      <aside aria-label="ช่องทางติดต่อด่วน" className="hidden md:flex fixed bottom-6 right-6 z-30 flex-col gap-3">
-        <a
-          href={siteSettings.lineUrl || "https://line.me"}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="w-13 h-13 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white shadow-xl flex items-center justify-center transition-all hover:scale-105 group relative"
-          title="ปรึกษาทาง LINE"
-        >
-          <MessageCircle className="w-6 h-6" />
-          <span className="absolute right-15 bg-slate-900 text-white text-xs font-medium py-1.5 px-3 rounded-xl whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-md">
-            แชทคุยกับผู้เชี่ยวชาญ Coway ({siteSettings.lineId || '@cowaythailand'})
+      <aside aria-label="ช่องทางติดต่อด่วน" className="hidden md:flex fixed bottom-6 right-6 z-30 flex-col gap-3.5">
+        {/* Floating LINE Button - Green with Pulsing Radar Effect */}
+        <div className="relative group">
+          {/* Subtle Outer Glowing Pulse Ring */}
+          <span className="absolute -inset-1 rounded-2xl bg-emerald-500 opacity-60 blur-xs animate-pulse" />
+          
+          {/* Attention Blinking Ping Indicator */}
+          <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5 z-10 pointer-events-none">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-80"></span>
+            <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-[#06c755] border-2 border-white"></span>
           </span>
-        </a>
 
-        <a
-          href={`tel:${siteSettings.phoneNumber || '020000000'}`}
-          className="w-13 h-13 rounded-2xl bg-slate-900 hover:bg-sky-600 text-white shadow-xl flex items-center justify-center transition-all hover:scale-105 group relative"
-          title={`โทรติดต่อด่วน ${siteSettings.phoneDisplay || '02-000-0000'}`}
-        >
-          <Phone className="w-5 h-5" />
-          <span className="absolute right-15 bg-slate-900 text-white text-xs font-medium py-1.5 px-3 rounded-xl whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-md">
-            โทรด่วน {siteSettings.phoneDisplay || '02-000-0000'}
-          </span>
-        </a>
+          <a
+            href={siteSettings.lineUrl || "https://line.me"}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="relative w-13 h-13 rounded-2xl bg-[#06c755] hover:bg-[#05b34c] text-white shadow-xl flex items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer"
+            title="แอด LINE สอบถามโปรโมชั่น"
+          >
+            <MessageCircle className="w-6 h-6 animate-pulse" />
+            <span className="absolute right-15 bg-slate-900 text-white text-xs font-semibold py-1.5 px-3 rounded-xl whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
+              แอด LINE สอบถามโปรโมชั่น ({siteSettings.lineId || '@cowaythailand'})
+            </span>
+          </a>
+        </div>
+
+        {/* Floating Call Button - Black with Subtle Glow */}
+        <div className="relative group">
+          {/* Subtle Glow */}
+          <span className="absolute -inset-0.5 rounded-2xl bg-slate-900 opacity-30 blur-xs animate-pulse" />
+
+          <a
+            href={`tel:${siteSettings.phoneNumber || '020000000'}`}
+            className="relative w-13 h-13 rounded-2xl bg-black hover:bg-slate-800 text-white shadow-xl flex items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer"
+            title={`โทรติดต่อด่วน ${siteSettings.phoneDisplay || '02-000-0000'}`}
+          >
+            <Phone className="w-5 h-5 animate-pulse" />
+            <span className="absolute right-15 bg-slate-900 text-white text-xs font-semibold py-1.5 px-3 rounded-xl whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
+              โทรด่วน {siteSettings.phoneDisplay || '02-000-0000'}
+            </span>
+          </a>
+        </div>
       </aside>
 
       {/* Mobile Bottom Sticky Bar (Strict 15% height constraint) */}

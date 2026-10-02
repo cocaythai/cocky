@@ -204,10 +204,10 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   href={lineChatUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full py-3.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-xl transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
+                  className="w-full py-3.5 px-4 bg-[#06c755] hover:bg-[#05b34c] text-white font-bold text-sm rounded-xl transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
                 >
                   <MessageCircle className="w-4 h-4" />
-                  <span>สั่งซื้อ / ปรึกษาโปรโมชั่นทาง LINE</span>
+                  <span>แอด LINE สั่งซื้อ / ปรึกษาโปรโมชั่น</span>
                 </a>
 
                 <div className="grid grid-cols-2 gap-2">
@@ -221,7 +221,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
                   <a
                     href="tel:0829988998"
-                    className="py-3 px-3 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl transition-colors flex items-center justify-center gap-1.5"
+                    className="py-3 px-3 bg-black hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-xs"
                   >
                     <Phone className="w-3.5 h-3.5" />
                     <span>โทรติดต่อทันที</span>

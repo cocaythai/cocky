@@ -141,18 +141,18 @@ export const InquiryDrawer: React.FC<InquiryDrawerProps> = ({
                 href={lineUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs sm:text-sm rounded-xl transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
+                className="w-full py-3 px-4 bg-[#06c755] hover:bg-[#05b34c] text-white font-bold text-xs sm:text-sm rounded-xl transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
               >
                 <MessageCircle className="w-4 h-4" />
-                <span>ส่งรายการเข้า LINE เพื่อขอโปรโมชั่น</span>
+                <span>แอด LINE ส่งรายการขอโปรโมชั่นพิเศษ</span>
               </a>
 
               <a
                 href="tel:0829988998"
-                className="w-full py-2.5 px-4 bg-white border border-slate-200 hover:bg-slate-100 text-slate-800 font-semibold text-xs rounded-xl transition-colors flex items-center justify-center gap-2"
+                className="w-full py-2.5 px-4 bg-black hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition-colors flex items-center justify-center gap-2 shadow-xs"
               >
-                <Phone className="w-3.5 h-3.5" />
-                <span>โทรด่วนปรึกษาเจ้าหน้าที่ 082-998-8998</span>
+                <Phone className="w-3.5 h-3.5 text-white" />
+                <span>โทรด่วนปรึกษาเจ้าหน้าที่</span>
               </a>
             </div>
 
