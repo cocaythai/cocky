@@ -16,12 +16,12 @@ class StorageService {
   /**
    * Upload an image file to Supabase Storage after client-side compression
    * @param file User-selected file from mobile or desktop
-   * @param folder Destination subfolder in bucket ('banners' | 'products')
+   * @param folder Destination subfolder in bucket ('banners' | 'products' | 'articles' | 'logo')
    * @param oldUrl Optional previous image URL to remove after successful upload
    */
   async uploadImage(
     file: File,
-    folder: 'banners' | 'products' = 'products',
+    folder: 'banners' | 'products' | 'articles' | 'logo' = 'products',
     oldUrl?: string
   ): Promise<UploadResult> {
     if (!isSupabaseConfigured() || !supabase) {

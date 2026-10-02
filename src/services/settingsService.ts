@@ -42,6 +42,12 @@ class SettingsService {
           ? JSON.parse(data.banners)
           : DEFAULT_SITE_SETTINGS.banners;
 
+        const articles = Array.isArray(data.articles)
+          ? data.articles
+          : typeof data.articles === 'string'
+          ? JSON.parse(data.articles)
+          : (DEFAULT_SITE_SETTINGS.articles || []);
+
         const merged: SiteSettings = {
           id: 'main',
           siteName: data.site_name || DEFAULT_SITE_SETTINGS.siteName,
@@ -62,6 +68,7 @@ class SettingsService {
           contactAddress: data.contact_address || DEFAULT_SITE_SETTINGS.contactAddress,
           contactHours: data.contact_hours || DEFAULT_SITE_SETTINGS.contactHours,
           banners: banners && banners.length > 0 ? banners : DEFAULT_SITE_SETTINGS.banners,
+          articles: articles && articles.length > 0 ? articles : (DEFAULT_SITE_SETTINGS.articles || []),
           updatedAt: data.updated_at,
         };
 
@@ -109,6 +116,7 @@ class SettingsService {
         contact_address: settings.contactAddress,
         contact_hours: settings.contactHours,
         banners: settings.banners,
+        articles: settings.articles || [],
         updated_at: new Date().toISOString(),
       };
 
@@ -116,7 +124,7 @@ class SettingsService {
         .from('site_settings')
         .upsert(payload, { onConflict: 'id' });
 
-      // Fallback: If optional columns (logo_url, facebook_url, facebook_name) do not exist yet in table, save core columns
+      // Fallback: If optional columns do not exist yet in table, save core columns
       if (error && (error.message.includes('column') && error.message.includes('site_settings'))) {
         const corePayload = {
           id: 'main',
@@ -134,6 +142,7 @@ class SettingsService {
           contact_address: settings.contactAddress,
           contact_hours: settings.contactHours,
           banners: settings.banners,
+          articles: settings.articles || [],
           updated_at: new Date().toISOString(),
         };
         const retryRes = await supabase
@@ -167,7 +176,7 @@ class SettingsService {
    */
   async uploadAsset(
     file: File,
-    folder: 'banners' | 'products' = 'banners',
+    folder: 'banners' | 'products' | 'articles' | 'logo' = 'banners',
     oldUrl?: string
   ): Promise<StorageUploadResult> {
     return storageService.uploadImage(file, folder, oldUrl);

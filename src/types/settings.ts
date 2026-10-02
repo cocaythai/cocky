@@ -1,3 +1,6 @@
+import { Article } from './article';
+import { DEFAULT_ARTICLES } from '../data/defaultArticles';
+
 export interface HeroBanner {
   id: string;
   title: string;
@@ -29,6 +32,7 @@ export interface SiteSettings {
   contactAddress: string;
   contactHours: string;
   banners: HeroBanner[];
+  articles?: Article[];
   updatedAt?: string;
 }
 
@@ -51,6 +55,7 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   contactSubtitle: 'สอบถามข้อมูลโปรโมชั่น เลือกรุ่นที่เหมาะกับคุณ หรือนัดหมายติดตั้งฟรีทั่วประเทศ',
   contactAddress: 'กรุงเทพมหานครและปริมณฑล พร้อมศูนย์บริการและช่างผู้ชำนาญการติดตั้งฟรีทั่วประเทศ',
   contactHours: 'จันทร์ - อาทิตย์ 08:30 - 20:00 น. (ทุกวันไม่มีวันหยุด)',
+  articles: DEFAULT_ARTICLES,
   banners: [
     {
       id: 'banner-1',
