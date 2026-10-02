@@ -1,4 +1,6 @@
 import { Article } from './article';
+import { KnowledgeTip, DEFAULT_KNOWLEDGE_TIPS } from '../data/defaultKnowledge';
+import { CustomerReviewItem, DEFAULT_CUSTOMER_REVIEWS } from '../data/defaultReviews';
 import { DEFAULT_ARTICLES } from '../data/defaultArticles';
 
 export interface HeroBanner {
@@ -11,6 +13,8 @@ export interface HeroBanner {
   isActive: boolean;
   order: number;
 }
+
+export type { Article, KnowledgeTip, CustomerReviewItem };
 
 export interface SiteSettings {
   id: string;
@@ -33,6 +37,8 @@ export interface SiteSettings {
   contactHours: string;
   banners: HeroBanner[];
   articles?: Article[];
+  knowledgeTips?: KnowledgeTip[];
+  customerReviews?: CustomerReviewItem[];
   updatedAt?: string;
 }
 
@@ -55,7 +61,6 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   contactSubtitle: 'สอบถามข้อมูลโปรโมชั่น เลือกรุ่นที่เหมาะกับคุณ หรือนัดหมายติดตั้งฟรีทั่วประเทศ',
   contactAddress: 'กรุงเทพมหานครและปริมณฑล พร้อมศูนย์บริการและช่างผู้ชำนาญการติดตั้งฟรีทั่วประเทศ',
   contactHours: 'จันทร์ - อาทิตย์ 08:30 - 20:00 น. (ทุกวันไม่มีวันหยุด)',
-  articles: DEFAULT_ARTICLES,
   banners: [
     {
       id: 'banner-1',
@@ -78,4 +83,7 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
       order: 2,
     },
   ],
+  articles: DEFAULT_ARTICLES,
+  knowledgeTips: DEFAULT_KNOWLEDGE_TIPS,
+  customerReviews: DEFAULT_CUSTOMER_REVIEWS,
 };

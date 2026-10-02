@@ -5,6 +5,7 @@ import { ServiceHighlights } from './components/ServiceHighlights';
 import { ProductCatalog } from './components/ProductCatalog';
 import { WaterSavingsCalculator } from './components/WaterSavingsCalculator';
 import { AboutSection } from './components/AboutSection';
+import { KnowledgeSection } from './components/KnowledgeSection';
 import { ArticlesSection } from './components/ArticlesSection';
 import { ProductDetailModal } from './components/ProductDetailModal';
 import { ProductComparisonModal } from './components/ProductComparisonModal';
@@ -275,11 +276,14 @@ export default function App() {
           onSelectRecommendedModel={handleSelectRecommendedModel}
         />
 
-        {/* 5. About Us & Customer Reviews */}
-        <AboutSection />
+        {/* 5. Health Knowledge Tips */}
+        <KnowledgeSection siteSettings={siteSettings} />
 
-        {/* 6. Health & Value Articles (แทนที่แบบฟอร์มลงทะเบียน) */}
+        {/* 6. Health & Value Articles */}
         <ArticlesSection siteSettings={siteSettings} />
+
+        {/* 7. About Us & Customer Reviews */}
+        <AboutSection siteSettings={siteSettings} />
       </main>
 
       {/* Footer */}

@@ -61,9 +61,9 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'hero', label: 'หน้าแรก' },
     { id: 'products', label: 'สินค้าทั้งหมด' },
     { id: 'services', label: 'บริการ Cody' },
-    { id: 'calculator', label: 'คำนวณความคุ้มค่า' },
-    { id: 'about', label: 'เกี่ยวกับเรา' },
-    { id: 'articles', label: 'สาระน่ารู้' },
+    { id: 'knowledge', label: 'สาระน่ารู้' },
+    { id: 'articles', label: 'บทความ' },
+    { id: 'about', label: 'รีวิว & เกี่ยวกับเรา' },
   ];
 
   const handleLinkClick = (id: string) => {

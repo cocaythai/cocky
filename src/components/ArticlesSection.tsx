@@ -22,9 +22,9 @@ export const ArticlesSection: React.FC<ArticlesSectionProps> = ({ siteSettings }
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
 
-  const rawArticles: Article[] = siteSettings?.articles && siteSettings.articles.length > 0
+  const rawArticles: Article[] = (siteSettings?.articles && siteSettings.articles.length > 0
     ? siteSettings.articles
-    : DEFAULT_ARTICLES;
+    : DEFAULT_ARTICLES).filter((a) => a.isActive !== false);
 
   const filteredArticles = activeCategory === 'all'
     ? rawArticles
