@@ -74,10 +74,10 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, siteSettings }) => {
               </li>
               <li>
                 <button
-                  onClick={() => onNavigate('contact')}
+                  onClick={() => onNavigate('articles')}
                   className="hover:text-white transition-colors cursor-pointer"
                 >
-                  ติดต่อเรา
+                  สาระน่ารู้เพื่อสุขภาพ
                 </button>
               </li>
             </ul>

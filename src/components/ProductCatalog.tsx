@@ -128,79 +128,6 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
           </p>
         </div>
 
-        {/* Supabase Connectivity & Live Data Status Strip */}
-        <div className="mb-8 p-3.5 sm:p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2.5">
-            <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
-              dataSource === 'supabase'
-                ? 'bg-emerald-100 text-emerald-700'
-                : 'bg-sky-100 text-sky-700'
-            }`}>
-              <Database className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-slate-900">
-                  {dataSource === 'supabase' ? 'เชื่อมต่อ Supabase Live Data' : 'สถานะการเชื่อมต่อฐานข้อมูล'}
-                </span>
-                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${
-                  dataSource === 'supabase'
-                    ? 'bg-emerald-100 text-emerald-800'
-                    : 'bg-slate-200 text-slate-700'
-                }`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${
-                    dataSource === 'supabase' ? 'bg-emerald-600 animate-pulse' : 'bg-slate-500'
-                  }`} />
-                  {dataSource === 'supabase' ? `ตาราง: products (${supabaseCount} รายการ)` : 'โหมดข้อมูลตัวอย่าง'}
-                </span>
-              </div>
-              <div className="text-slate-500 text-[11px] mt-0.5">
-                {statusMessage || (dataSource === 'supabase' ? 'ดึงข้อมูลสดจาก Supabase สำเร็จ' : 'เมื่อตั้งค่า VITE_SUPABASE_URL และ VITE_SUPABASE_ANON_KEY ระบบจะดึงข้อมูลจริงทันที')}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 self-start sm:self-center">
-            {onRefetch && (
-              <button
-                onClick={onRefetch}
-                disabled={loading}
-                title="รีเฟรชข้อมูลจาก Supabase"
-                className="p-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 transition-colors cursor-pointer disabled:opacity-50"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-              </button>
-            )}
-
-            {onSeedSampleProducts && (
-              <button
-                onClick={handleSeed}
-                disabled={isSeeding}
-                className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-sky-600 text-white font-medium text-xs flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50 whitespace-nowrap shadow-2xs"
-              >
-                <PlusCircle className="w-3.5 h-3.5" />
-                <span>{isSeeding ? 'กำลังส่งข้อมูล...' : 'ทดสอบเพิ่ม 2 รายการลง Supabase'}</span>
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Feedback alert after seeding sample products */}
-        {seedResult && (
-          <div className={`mb-6 p-3 rounded-xl border flex items-center gap-2 text-xs animate-in fade-in ${
-            seedResult.success
-              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-              : 'bg-rose-50 text-rose-800 border-rose-200'
-          }`}>
-            {seedResult.success ? (
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-            ) : (
-              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-            )}
-            <span>{seedResult.message}</span>
-          </div>
-        )}
-
         {/* Filter Toolbar Controls */}
         <div className="space-y-4 mb-8">
           {/* Main Category Filter Tabs */}
@@ -359,98 +286,24 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
             })}
           </div>
         ) : (
-          <div className="text-center py-12 px-6 bg-slate-50 rounded-3xl border border-dashed border-slate-300 max-w-3xl mx-auto space-y-4">
-            {dataSource === 'supabase' && products.length === 0 ? (
-              <div className="space-y-4">
-                <div className="w-12 h-12 bg-sky-100 text-sky-600 rounded-2xl flex items-center justify-center mx-auto">
-                  <Database className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-slate-900">
-                    เชื่อมต่อ Supabase สำเร็จ แต่ยังไม่พบข้อมูลในตาราง `products`
-                  </h3>
-                  <p className="text-xs text-slate-600 mt-1 max-w-lg mx-auto leading-relaxed">
-                    ระบบเชื่อมต่อกับ Supabase Project URL เรียบร้อยแล้ว หากคุณสร้างตารางแล้วแต่ยังไม่มีข้อมูล สามารถกดปุ่มเพิ่มข้อมูลทดสอบ 2 รายการ หรือนำคำสั่ง SQL ด้านล่างไปรันใน Supabase SQL Editor
-                  </p>
-                </div>
-
-                {/* SQL snippet helper */}
-                <div className="bg-slate-900 text-slate-200 p-4 rounded-2xl text-left text-[11px] font-mono overflow-x-auto shadow-inner border border-slate-800">
-                  <div className="text-slate-400 mb-2 font-sans font-semibold text-xs flex justify-between items-center">
-                    <span>คำสั่ง SQL สำหรับสร้างตารางและใส่ข้อมูลตัวอย่าง:</span>
-                  </div>
-                  <pre className="text-sky-300">
-{`CREATE TABLE IF NOT EXISTS public.products (
-  id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
-  name TEXT NOT NULL,
-  price NUMERIC NOT NULL,
-  image_url TEXT
-);
-
--- เปิดสิทธิ์ RLS ให้ผู้ใช้ทั่วไปอ่านข้อมูลได้
-ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow public read" ON public.products FOR SELECT USING (true);
-CREATE POLICY "Allow public insert" ON public.products FOR INSERT WITH CHECK (true);
-
--- เพิ่มข้อมูลตัวอย่าง 2 รายการเพื่อทดสอบ
-INSERT INTO public.products (name, price, image_url) VALUES
-('Coway Neo Plus', 790, 'https://images.unsplash.com/photo-1548839140-29a749e1bc4e?auto=format&fit=crop&w=600&q=80'),
-('Coway My Ice', 1290, 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=600&q=80');`}
-                  </pre>
-                </div>
-
-                <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-                  {onSeedSampleProducts && (
-                    <button
-                      onClick={handleSeed}
-                      disabled={isSeeding}
-                      className="px-4 py-2 bg-slate-900 hover:bg-sky-600 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
-                    >
-                      <PlusCircle className="w-4 h-4" />
-                      <span>{isSeeding ? 'กำลังส่งข้อมูล...' : 'ทดสอบเพิ่ม 2 รายการลง Supabase'}</span>
-                    </button>
-                  )}
-
-                  {onRefetch && (
-                    <button
-                      onClick={onRefetch}
-                      className="px-4 py-2 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-                    >
-                      <RefreshCw className="w-3.5 h-3.5" />
-                      <span>ดึงข้อมูลใหม่อีกครั้ง</span>
-                    </button>
-                  )}
-
-                  <button
-                    onClick={() => setShowMockPreview(!showMockPreview)}
-                    className="px-4 py-2 bg-sky-50 border border-sky-200 hover:bg-sky-100 text-sky-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-                  >
-                    <Eye className="w-3.5 h-3.5" />
-                    <span>{showMockPreview ? 'ซ่อนตัวอย่างจำลอง' : 'ดูตัวอย่างหน้าเว็บด้วยข้อมูลจำลอง'}</span>
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div>
-                <Search className="w-10 h-10 text-slate-400 mx-auto mb-3" />
-                <h3 className="text-base font-semibold text-slate-800">
-                  ไม่พบรายการสินค้าที่ตรงกับคำค้นหา
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-sm mx-auto">
-                  ลองเปลี่ยนคำค้นหาหรือเลือกหมวดหมู่อื่นเพื่อดูสินค้า Coway ทั้งหมด
-                </p>
-                <button
-                  onClick={() => {
-                    setSelectedCategory('all');
-                    setSelectedWaterType('all');
-                    setSearchQuery('');
-                  }}
-                  className="mt-4 px-4 py-2 text-xs font-medium text-sky-600 bg-sky-50 hover:bg-sky-100 rounded-lg transition-colors cursor-pointer"
-                >
-                  ล้างตัวกรองทั้งหมด
-                </button>
-              </div>
-            )}
+          <div className="text-center py-16 px-6 bg-slate-50 rounded-3xl border border-dashed border-slate-300 max-w-2xl mx-auto space-y-4">
+            <Search className="w-10 h-10 text-slate-400 mx-auto mb-2" />
+            <h3 className="text-base font-semibold text-slate-800">
+              ไม่พบรายการสินค้าที่ตรงกับคำค้นหา
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-sm mx-auto">
+              ลองเปลี่ยนคำค้นหาหรือเลือกหมวดหมู่อื่นเพื่อดูสินค้า Coway ทั้งหมด
+            </p>
+            <button
+              onClick={() => {
+                setSelectedCategory('all');
+                setSelectedWaterType('all');
+                setSearchQuery('');
+              }}
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+            >
+              ล้างตัวกรองทั้งหมด
+            </button>
           </div>
         )}
 
