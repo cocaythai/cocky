@@ -1,0 +1,497 @@
+import React, { useState, useMemo } from 'react';
+import { CowayProduct, ProductCategory, WaterType } from '../types';
+import { MOCK_PRODUCTS } from '../data/mockProducts';
+import { ProductCard } from './ProductCard';
+import { Search, Filter, SlidersHorizontal, Scale, X, Droplets, Wind, Sparkles, Bed, Check, Database, RefreshCw, PlusCircle, CheckCircle2, AlertCircle, Eye } from 'lucide-react';
+
+interface ProductCatalogProps {
+  products: CowayProduct[];
+  loading?: boolean;
+  dataSource?: 'supabase' | 'mock';
+  supabaseCount?: number;
+  statusMessage?: string;
+  onSeedSampleProducts?: () => Promise<{ success: boolean; message: string }>;
+  onRefetch?: () => void;
+  onViewDetails: (product: CowayProduct) => void;
+  onQuickInquiry: (product: CowayProduct) => void;
+  comparedProducts: CowayProduct[];
+  onToggleCompare: (product: CowayProduct) => void;
+  onOpenCompareModal: () => void;
+}
+
+export const ProductCatalog: React.FC<ProductCatalogProps> = ({
+  products,
+  loading = false,
+  dataSource = 'mock',
+  supabaseCount = 0,
+  statusMessage,
+  onSeedSampleProducts,
+  onRefetch,
+  onViewDetails,
+  onQuickInquiry,
+  comparedProducts,
+  onToggleCompare,
+  onOpenCompareModal,
+}) => {
+  const [selectedCategory, setSelectedCategory] = useState<ProductCategory>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'featured' | 'price-asc' | 'price-desc'>('featured');
+  const [selectedWaterType, setSelectedWaterType] = useState<WaterType | 'all'>('all');
+  const [isSeeding, setIsSeeding] = useState(false);
+  const [seedResult, setSeedResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [showMockPreview, setShowMockPreview] = useState(false);
+
+  const activeCatalog = useMemo(() => {
+    if (products.length > 0) return products;
+    if (showMockPreview) return MOCK_PRODUCTS;
+    return [];
+  }, [products, showMockPreview]);
+
+  const handleSeed = async () => {
+    if (!onSeedSampleProducts) return;
+    setIsSeeding(true);
+    setSeedResult(null);
+    try {
+      const res = await onSeedSampleProducts();
+      setSeedResult(res);
+      setTimeout(() => setSeedResult(null), 4000);
+    } catch (err: any) {
+      setSeedResult({ success: false, message: err.message || 'เกิดข้อผิดพลาด' });
+    } finally {
+      setIsSeeding(false);
+    }
+  };
+
+  const categories = [
+    { id: 'all', label: 'ทั้งหมด', count: activeCatalog.length },
+    { id: 'water', label: 'เครื่องกรองน้ำ', count: activeCatalog.filter(p => p.category === 'water').length, icon: Droplets },
+    { id: 'air', label: 'เครื่องฟอกอากาศ', count: activeCatalog.filter(p => p.category === 'air').length, icon: Wind },
+    { id: 'bidet', label: 'ฝารองนั่งสุขภัณฑ์', count: activeCatalog.filter(p => p.category === 'bidet').length, icon: Sparkles },
+    { id: 'mattress', label: 'ที่นอนและเตียง', count: activeCatalog.filter(p => p.category === 'mattress').length, icon: Bed },
+  ];
+
+  const filteredProducts = useMemo(() => {
+    return activeCatalog
+      .filter((p) => {
+        // Category filter
+        if (selectedCategory !== 'all' && p.category !== selectedCategory) {
+          return false;
+        }
+
+        // Water type filter (only relevant for water category or all)
+        if (selectedWaterType !== 'all') {
+          if (!p.waterTypes || !p.waterTypes.includes(selectedWaterType)) {
+            return false;
+          }
+        }
+
+        // Search query filter
+        if (searchQuery.trim()) {
+          const query = searchQuery.toLowerCase().trim();
+          const matchName = p.name.toLowerCase().includes(query);
+          const matchModel = p.modelCode.toLowerCase().includes(query);
+          const matchTag = p.tagline.toLowerCase().includes(query);
+          const matchDesc = p.shortDesc.toLowerCase().includes(query);
+          return matchName || matchModel || matchTag || matchDesc;
+        }
+
+        return true;
+      })
+      .sort((a, b) => {
+        if (sortBy === 'price-asc') {
+          return a.startingMonthlyPrice - b.startingMonthlyPrice;
+        }
+        if (sortBy === 'price-desc') {
+          return b.startingMonthlyPrice - a.startingMonthlyPrice;
+        }
+        // default 'featured'
+        if (a.isPopular && !b.isPopular) return -1;
+        if (!a.isPopular && b.isPopular) return 1;
+        return 0;
+      });
+  }, [products, selectedCategory, selectedWaterType, searchQuery, sortBy]);
+
+  return (
+    <section id="products" className="py-16 sm:py-20 bg-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        {/* Section Header */}
+        <div className="max-w-3xl mb-8">
+          <div className="text-xs sm:text-sm font-semibold text-sky-600 uppercase tracking-wider mb-2">
+            CATALOG · สินค้าทั้งหมดของ COWAY
+          </div>
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 tracking-tight">
+            เลือกสรรผลิตภัณฑ์ Coway ที่เหมาะกับไลฟ์สไตล์คุณ
+          </h2>
+          <p className="mt-2 text-sm sm:text-base text-slate-600">
+            สมัครสมาชิกรายเดือนสบายกระเป๋า ไม่มีค่าใช้จ่ายแอบแฝง ฟรีติดตั้งและไส้กรองแท้ตลอดอายุสัญญา
+          </p>
+        </div>
+
+        {/* Supabase Connectivity & Live Data Status Strip */}
+        <div className="mb-8 p-3.5 sm:p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2.5">
+            <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+              dataSource === 'supabase'
+                ? 'bg-emerald-100 text-emerald-700'
+                : 'bg-sky-100 text-sky-700'
+            }`}>
+              <Database className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-slate-900">
+                  {dataSource === 'supabase' ? 'เชื่อมต่อ Supabase Live Data' : 'สถานะการเชื่อมต่อฐานข้อมูล'}
+                </span>
+                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${
+                  dataSource === 'supabase'
+                    ? 'bg-emerald-100 text-emerald-800'
+                    : 'bg-slate-200 text-slate-700'
+                }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${
+                    dataSource === 'supabase' ? 'bg-emerald-600 animate-pulse' : 'bg-slate-500'
+                  }`} />
+                  {dataSource === 'supabase' ? `ตาราง: products (${supabaseCount} รายการ)` : 'โหมดข้อมูลตัวอย่าง'}
+                </span>
+              </div>
+              <div className="text-slate-500 text-[11px] mt-0.5">
+                {statusMessage || (dataSource === 'supabase' ? 'ดึงข้อมูลสดจาก Supabase สำเร็จ' : 'เมื่อตั้งค่า VITE_SUPABASE_URL และ VITE_SUPABASE_ANON_KEY ระบบจะดึงข้อมูลจริงทันที')}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 self-start sm:self-center">
+            {onRefetch && (
+              <button
+                onClick={onRefetch}
+                disabled={loading}
+                title="รีเฟรชข้อมูลจาก Supabase"
+                className="p-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 transition-colors cursor-pointer disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+              </button>
+            )}
+
+            {onSeedSampleProducts && (
+              <button
+                onClick={handleSeed}
+                disabled={isSeeding}
+                className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-sky-600 text-white font-medium text-xs flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50 whitespace-nowrap shadow-2xs"
+              >
+                <PlusCircle className="w-3.5 h-3.5" />
+                <span>{isSeeding ? 'กำลังส่งข้อมูล...' : 'ทดสอบเพิ่ม 2 รายการลง Supabase'}</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Feedback alert after seeding sample products */}
+        {seedResult && (
+          <div className={`mb-6 p-3 rounded-xl border flex items-center gap-2 text-xs animate-in fade-in ${
+            seedResult.success
+              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+              : 'bg-rose-50 text-rose-800 border-rose-200'
+          }`}>
+            {seedResult.success ? (
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            ) : (
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+            )}
+            <span>{seedResult.message}</span>
+          </div>
+        )}
+
+        {/* Filter Toolbar Controls */}
+        <div className="space-y-4 mb-8">
+          {/* Main Category Filter Tabs */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+            {categories.map((cat) => {
+              const Icon = cat.icon;
+              const isActive = selectedCategory === cat.id;
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => {
+                    setSelectedCategory(cat.id as ProductCategory);
+                    if (cat.id !== 'water' && cat.id !== 'all') {
+                      setSelectedWaterType('all');
+                    }
+                  }}
+                  className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-medium whitespace-nowrap transition-all flex items-center gap-2 cursor-pointer ${
+                    isActive
+                      ? 'bg-slate-900 text-white shadow-xs'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  {Icon && <Icon className="w-4 h-4" />}
+                  <span>{cat.label}</span>
+                  <span
+                    className={`text-[11px] font-mono px-1.5 py-0.2 rounded-full ${
+                      isActive ? 'bg-slate-800 text-slate-200' : 'bg-slate-200 text-slate-600'
+                    }`}
+                  >
+                    {cat.count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Secondary Controls: Search, Water Type, Sort */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pt-2">
+            {/* Search Input */}
+            <div className="relative flex-1 max-w-md">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="ค้นหารุ่นสินค้า เช่น Neo Plus, My Ice, AP-2021A..."
+                className="w-full pl-10 pr-9 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-hidden focus:border-sky-500 focus:bg-white transition-all"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            {/* Sub Filters Row */}
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Water Type pills if in water category or all */}
+              {(selectedCategory === 'water' || selectedCategory === 'all') && (
+                <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+                  <button
+                    onClick={() => setSelectedWaterType('all')}
+                    className={`px-2.5 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer ${
+                      selectedWaterType === 'all'
+                        ? 'bg-white text-slate-900 shadow-2xs font-semibold'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    ทุกระบบ
+                  </button>
+                  <button
+                    onClick={() => setSelectedWaterType('ice')}
+                    className={`px-2.5 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer ${
+                      selectedWaterType === 'ice'
+                        ? 'bg-white text-sky-700 shadow-2xs font-semibold'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    มีน้ำแข็ง
+                  </button>
+                  <button
+                    onClick={() => setSelectedWaterType('hot')}
+                    className={`px-2.5 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer ${
+                      selectedWaterType === 'hot'
+                        ? 'bg-white text-rose-700 shadow-2xs font-semibold'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    น้ำร้อน/เย็น
+                  </button>
+                  <button
+                    onClick={() => setSelectedWaterType('room')}
+                    className={`px-2.5 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer ${
+                      selectedWaterType === 'room'
+                        ? 'bg-white text-slate-900 shadow-2xs font-semibold'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    อุณหภูมิห้อง
+                  </button>
+                </div>
+              )}
+
+              {/* Sort By Dropdown */}
+              <div className="flex items-center gap-1.5 bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200/60">
+                <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500" />
+                <span className="text-xs text-slate-500">เรียงตาม:</span>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as any)}
+                  className="bg-transparent text-xs font-medium text-slate-800 focus:outline-hidden cursor-pointer"
+                >
+                  <option value="featured">รุ่นยอดนิยม</option>
+                  <option value="price-asc">ราคา: ต่ำไปสูง</option>
+                  <option value="price-desc">ราคา: สูงไปต่ำ</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Product Cards Grid */}
+        {loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="bg-white rounded-2xl border border-slate-200/80 p-5 space-y-4 animate-pulse">
+                <div className="aspect-4/3 bg-slate-100 rounded-xl" />
+                <div className="h-4 bg-slate-100 rounded w-1/3" />
+                <div className="h-6 bg-slate-100 rounded w-2/3" />
+                <div className="h-3 bg-slate-100 rounded w-full" />
+                <div className="h-3 bg-slate-100 rounded w-4/5" />
+                <div className="pt-3 border-t border-slate-100 flex justify-between items-center">
+                  <div className="h-6 bg-slate-100 rounded w-1/2" />
+                  <div className="h-4 bg-slate-100 rounded w-1/4" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : filteredProducts.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredProducts.map((product) => {
+              const isCompared = comparedProducts.some((p) => p.id === product.id);
+              return (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  onViewDetails={onViewDetails}
+                  onQuickInquiry={onQuickInquiry}
+                  isCompared={isCompared}
+                  onToggleCompare={onToggleCompare}
+                />
+              );
+            })}
+          </div>
+        ) : (
+          <div className="text-center py-12 px-6 bg-slate-50 rounded-3xl border border-dashed border-slate-300 max-w-3xl mx-auto space-y-4">
+            {dataSource === 'supabase' && products.length === 0 ? (
+              <div className="space-y-4">
+                <div className="w-12 h-12 bg-sky-100 text-sky-600 rounded-2xl flex items-center justify-center mx-auto">
+                  <Database className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">
+                    เชื่อมต่อ Supabase สำเร็จ แต่ยังไม่พบข้อมูลในตาราง `products`
+                  </h3>
+                  <p className="text-xs text-slate-600 mt-1 max-w-lg mx-auto leading-relaxed">
+                    ระบบเชื่อมต่อกับ Supabase Project URL เรียบร้อยแล้ว หากคุณสร้างตารางแล้วแต่ยังไม่มีข้อมูล สามารถกดปุ่มเพิ่มข้อมูลทดสอบ 2 รายการ หรือนำคำสั่ง SQL ด้านล่างไปรันใน Supabase SQL Editor
+                  </p>
+                </div>
+
+                {/* SQL snippet helper */}
+                <div className="bg-slate-900 text-slate-200 p-4 rounded-2xl text-left text-[11px] font-mono overflow-x-auto shadow-inner border border-slate-800">
+                  <div className="text-slate-400 mb-2 font-sans font-semibold text-xs flex justify-between items-center">
+                    <span>คำสั่ง SQL สำหรับสร้างตารางและใส่ข้อมูลตัวอย่าง:</span>
+                  </div>
+                  <pre className="text-sky-300">
+{`CREATE TABLE IF NOT EXISTS public.products (
+  id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  name TEXT NOT NULL,
+  price NUMERIC NOT NULL,
+  image_url TEXT
+);
+
+-- เปิดสิทธิ์ RLS ให้ผู้ใช้ทั่วไปอ่านข้อมูลได้
+ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow public read" ON public.products FOR SELECT USING (true);
+CREATE POLICY "Allow public insert" ON public.products FOR INSERT WITH CHECK (true);
+
+-- เพิ่มข้อมูลตัวอย่าง 2 รายการเพื่อทดสอบ
+INSERT INTO public.products (name, price, image_url) VALUES
+('Coway Neo Plus', 790, 'https://images.unsplash.com/photo-1548839140-29a749e1bc4e?auto=format&fit=crop&w=600&q=80'),
+('Coway My Ice', 1290, 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=600&q=80');`}
+                  </pre>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+                  {onSeedSampleProducts && (
+                    <button
+                      onClick={handleSeed}
+                      disabled={isSeeding}
+                      className="px-4 py-2 bg-slate-900 hover:bg-sky-600 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                    >
+                      <PlusCircle className="w-4 h-4" />
+                      <span>{isSeeding ? 'กำลังส่งข้อมูล...' : 'ทดสอบเพิ่ม 2 รายการลง Supabase'}</span>
+                    </button>
+                  )}
+
+                  {onRefetch && (
+                    <button
+                      onClick={onRefetch}
+                      className="px-4 py-2 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span>ดึงข้อมูลใหม่อีกครั้ง</span>
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => setShowMockPreview(!showMockPreview)}
+                    className="px-4 py-2 bg-sky-50 border border-sky-200 hover:bg-sky-100 text-sky-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>{showMockPreview ? 'ซ่อนตัวอย่างจำลอง' : 'ดูตัวอย่างหน้าเว็บด้วยข้อมูลจำลอง'}</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <Search className="w-10 h-10 text-slate-400 mx-auto mb-3" />
+                <h3 className="text-base font-semibold text-slate-800">
+                  ไม่พบรายการสินค้าที่ตรงกับคำค้นหา
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-sm mx-auto">
+                  ลองเปลี่ยนคำค้นหาหรือเลือกหมวดหมู่อื่นเพื่อดูสินค้า Coway ทั้งหมด
+                </p>
+                <button
+                  onClick={() => {
+                    setSelectedCategory('all');
+                    setSelectedWaterType('all');
+                    setSearchQuery('');
+                  }}
+                  className="mt-4 px-4 py-2 text-xs font-medium text-sky-600 bg-sky-50 hover:bg-sky-100 rounded-lg transition-colors cursor-pointer"
+                >
+                  ล้างตัวกรองทั้งหมด
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Bottom Floating Compare Bar if user selected items */}
+        {comparedProducts.length > 0 && (
+          <div className="fixed bottom-16 sm:bottom-6 left-4 right-4 max-w-2xl mx-auto z-30 bg-slate-900 text-white rounded-2xl p-3 sm:p-4 shadow-2xl border border-slate-700 flex items-center justify-between gap-4 animate-in fade-in slide-in-from-bottom-4">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-sky-500/20 text-sky-400 flex items-center justify-center shrink-0">
+                <Scale className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-xs sm:text-sm font-semibold">
+                  เปรียบเทียบสินค้า ({comparedProducts.length}/3 รุ่น)
+                </div>
+                <div className="text-[11px] text-slate-400 truncate max-w-[200px] sm:max-w-xs">
+                  {comparedProducts.map((p) => p.name).join(', ')}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={onOpenCompareModal}
+                className="px-4 py-2 bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold text-xs rounded-xl transition-colors cursor-pointer"
+              >
+                ดูตารางเปรียบเทียบ
+              </button>
+              <button
+                onClick={() => {
+                  comparedProducts.forEach((p) => onToggleCompare(p));
+                }}
+                className="p-2 text-slate-400 hover:text-white rounded-lg cursor-pointer"
+                title="ล้างรายการเปรียบเทียบ"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
+      </div>
+    </section>
+  );
+};

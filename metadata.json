@@ -1,0 +1,6 @@
+{
+  "name": "Coway Official Partner Thailand - เครื่องกรองน้ำและเครื่องฟอกอากาศ",
+  "description": "เว็บไซต์แนะนำและจำหน่ายเครื่องกรองน้ำ เครื่องฟอกอากาศ Coway ประเทศไทย พร้อมบริการ Coway Subscription และ Cody Heart Service ดูแลฟรีตลอดอายุสัญญา",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
