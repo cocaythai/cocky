@@ -9,4 +9,6 @@ export interface Article {
   imageUrl: string;
   keyPoints: string[];
   content: string[];
+  isActive?: boolean;
+  order?: number;
 }

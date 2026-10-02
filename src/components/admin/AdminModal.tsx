@@ -2,11 +2,17 @@ import React, { useState } from 'react';
 import { SiteSettings, HeroBanner } from '../../types/settings';
 import { Article } from '../../types/article';
 import { DEFAULT_ARTICLES } from '../../data/defaultArticles';
+import { DEFAULT_KNOWLEDGE_TIPS } from '../../data/defaultKnowledge';
+import { DEFAULT_CUSTOMER_REVIEWS } from '../../data/defaultReviews';
 import { CowayProduct } from '../../types/index.ts';
 import { settingsService } from '../../services/settingsService';
 import { adminProductService } from '../../services/adminProductService';
 import { storageService, STORAGE_BUCKET } from '../../services/storageService';
 import { formatBytes } from '../../utils/imageCompressor';
+import { BannersTab } from './tabs/BannersTab';
+import { ArticlesTab } from './tabs/ArticlesTab';
+import { KnowledgeTab } from './tabs/KnowledgeTab';
+import { ReviewsTab } from './tabs/ReviewsTab';
 import {
   X,
   Settings,
@@ -42,9 +48,11 @@ import {
   BookOpen,
   FileText,
   Clock,
+  Lightbulb,
+  MessageSquareQuote,
 } from 'lucide-react';
 
-export type AdminMenuTab = 'dashboard' | 'products' | 'banners' | 'articles' | 'contact' | 'settings';
+export type AdminMenuTab = 'dashboard' | 'products' | 'banners' | 'articles' | 'knowledge' | 'reviews' | 'contact' | 'settings';
 
 interface AdminModalProps {
   isOpen: boolean;
@@ -604,79 +612,103 @@ export const AdminModal: React.FC<AdminModalProps> = ({
         </header>
 
         {/* ========================================================= */}
-        {/* 6 CLEAR SUB-NAVIGATION TABS (Thumb-friendly & Scrollable) */}
+        {/* SUB-NAVIGATION TABS (Thumb-friendly & Scrollable) */}
         {/* ========================================================= */}
         <nav className="flex border-b border-slate-200 bg-slate-50 px-2 sm:px-6 overflow-x-auto scrollbar-none">
           <button
             onClick={() => setActiveTab('dashboard')}
-            className={`py-3.5 px-3.5 sm:px-4 font-semibold text-xs sm:text-sm flex items-center gap-2 border-b-2 whitespace-nowrap transition-all cursor-pointer ${
+            className={`py-3.5 px-3 font-semibold text-xs sm:text-sm flex items-center gap-1.5 border-b-2 whitespace-nowrap transition-all cursor-pointer ${
               activeTab === 'dashboard'
                 ? 'border-sky-600 text-sky-600 bg-white'
                 : 'border-transparent text-slate-600 hover:text-slate-900'
             }`}
           >
             <LayoutDashboard className="w-4 h-4" />
-            <span>1. Dashboard</span>
+            <span>Dashboard</span>
           </button>
 
           <button
             onClick={() => setActiveTab('products')}
-            className={`py-3.5 px-3.5 sm:px-4 font-semibold text-xs sm:text-sm flex items-center gap-2 border-b-2 whitespace-nowrap transition-all cursor-pointer ${
+            className={`py-3.5 px-3 font-semibold text-xs sm:text-sm flex items-center gap-1.5 border-b-2 whitespace-nowrap transition-all cursor-pointer ${
               activeTab === 'products'
                 ? 'border-sky-600 text-sky-600 bg-white'
                 : 'border-transparent text-slate-600 hover:text-slate-900'
             }`}
           >
             <Package className="w-4 h-4" />
-            <span>2. จัดการสินค้า ({products.length})</span>
+            <span>สินค้า ({products.length})</span>
           </button>
 
           <button
             onClick={() => setActiveTab('banners')}
-            className={`py-3.5 px-3.5 sm:px-4 font-semibold text-xs sm:text-sm flex items-center gap-2 border-b-2 whitespace-nowrap transition-all cursor-pointer ${
+            className={`py-3.5 px-3 font-semibold text-xs sm:text-sm flex items-center gap-1.5 border-b-2 whitespace-nowrap transition-all cursor-pointer ${
               activeTab === 'banners'
                 ? 'border-sky-600 text-sky-600 bg-white'
                 : 'border-transparent text-slate-600 hover:text-slate-900'
             }`}
           >
             <ImageIcon className="w-4 h-4" />
-            <span>3. จัดการแบนเนอร์ ({formData.banners.length})</span>
+            <span>แบนเนอร์ ({formData.banners.length})</span>
           </button>
 
           <button
             onClick={() => setActiveTab('articles')}
-            className={`py-3.5 px-3.5 sm:px-4 font-semibold text-xs sm:text-sm flex items-center gap-2 border-b-2 whitespace-nowrap transition-all cursor-pointer ${
+            className={`py-3.5 px-3 font-semibold text-xs sm:text-sm flex items-center gap-1.5 border-b-2 whitespace-nowrap transition-all cursor-pointer ${
               activeTab === 'articles'
                 ? 'border-sky-600 text-sky-600 bg-white'
                 : 'border-transparent text-slate-600 hover:text-slate-900'
             }`}
           >
             <BookOpen className="w-4 h-4" />
-            <span>4. จัดการบทความ ({formData.articles?.length || DEFAULT_ARTICLES.length})</span>
+            <span>บทความ ({formData.articles?.length || DEFAULT_ARTICLES.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('knowledge')}
+            className={`py-3.5 px-3 font-semibold text-xs sm:text-sm flex items-center gap-1.5 border-b-2 whitespace-nowrap transition-all cursor-pointer ${
+              activeTab === 'knowledge'
+                ? 'border-sky-600 text-sky-600 bg-white'
+                : 'border-transparent text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <Lightbulb className="w-4 h-4 text-amber-500" />
+            <span>สาระน่ารู้ ({formData.knowledgeTips?.length || DEFAULT_KNOWLEDGE_TIPS.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('reviews')}
+            className={`py-3.5 px-3 font-semibold text-xs sm:text-sm flex items-center gap-1.5 border-b-2 whitespace-nowrap transition-all cursor-pointer ${
+              activeTab === 'reviews'
+                ? 'border-sky-600 text-sky-600 bg-white'
+                : 'border-transparent text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <MessageSquareQuote className="w-4 h-4 text-emerald-600" />
+            <span>รีวิว ({formData.customerReviews?.length || DEFAULT_CUSTOMER_REVIEWS.length})</span>
           </button>
 
           <button
             onClick={() => setActiveTab('contact')}
-            className={`py-3.5 px-3.5 sm:px-4 font-semibold text-xs sm:text-sm flex items-center gap-2 border-b-2 whitespace-nowrap transition-all cursor-pointer ${
+            className={`py-3.5 px-3 font-semibold text-xs sm:text-sm flex items-center gap-1.5 border-b-2 whitespace-nowrap transition-all cursor-pointer ${
               activeTab === 'contact'
                 ? 'border-sky-600 text-sky-600 bg-white'
                 : 'border-transparent text-slate-600 hover:text-slate-900'
             }`}
           >
             <Phone className="w-4 h-4" />
-            <span>5. ข้อมูลติดต่อ</span>
+            <span>ข้อมูลติดต่อ</span>
           </button>
 
           <button
             onClick={() => setActiveTab('settings')}
-            className={`py-3.5 px-3.5 sm:px-4 font-semibold text-xs sm:text-sm flex items-center gap-2 border-b-2 whitespace-nowrap transition-all cursor-pointer ${
+            className={`py-3.5 px-3 font-semibold text-xs sm:text-sm flex items-center gap-1.5 border-b-2 whitespace-nowrap transition-all cursor-pointer ${
               activeTab === 'settings'
                 ? 'border-sky-600 text-sky-600 bg-white'
                 : 'border-transparent text-slate-600 hover:text-slate-900'
             }`}
           >
             <Sliders className="w-4 h-4" />
-            <span>6. ตั้งค่าเว็บไซต์</span>
+            <span>ตั้งค่าเว็บไซต์</span>
           </button>
         </nav>
 
