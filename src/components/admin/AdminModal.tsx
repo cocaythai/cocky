@@ -1,18 +1,10 @@
 import React, { useState } from 'react';
 import { SiteSettings, HeroBanner } from '../../types/settings';
-import { Article } from '../../types/article';
-import { DEFAULT_ARTICLES } from '../../data/defaultArticles';
-import { DEFAULT_KNOWLEDGE_TIPS } from '../../data/defaultKnowledge';
-import { DEFAULT_CUSTOMER_REVIEWS } from '../../data/defaultReviews';
 import { CowayProduct } from '../../types/index.ts';
 import { settingsService } from '../../services/settingsService';
 import { adminProductService } from '../../services/adminProductService';
 import { storageService, STORAGE_BUCKET } from '../../services/storageService';
 import { formatBytes } from '../../utils/imageCompressor';
-import { BannersTab } from './tabs/BannersTab';
-import { ArticlesTab } from './tabs/ArticlesTab';
-import { KnowledgeTab } from './tabs/KnowledgeTab';
-import { ReviewsTab } from './tabs/ReviewsTab';
 import {
   X,
   Settings,
@@ -45,14 +37,9 @@ import {
   Share2,
   Sparkles,
   UserCheck,
-  BookOpen,
-  FileText,
-  Clock,
-  Lightbulb,
-  MessageSquareQuote,
 } from 'lucide-react';
 
-export type AdminMenuTab = 'dashboard' | 'products' | 'banners' | 'articles' | 'knowledge' | 'reviews' | 'contact' | 'settings';
+export type AdminMenuTab = 'dashboard' | 'products' | 'banners' | 'contact' | 'settings';
 
 interface AdminModalProps {
   isOpen: boolean;
@@ -113,27 +100,6 @@ export const AdminModal: React.FC<AdminModalProps> = ({
   const [productImageUploading, setProductImageUploading] = useState(false);
   const [productImageStats, setProductImageStats] = useState<string | null>(null);
   const [logoUploading, setLogoUploading] = useState(false);
-
-  // Article Management State
-  const [isAddingArticle, setIsAddingArticle] = useState(false);
-  const [editingArticleId, setEditingArticleId] = useState<string | null>(null);
-  const [articleForm, setArticleForm] = useState<Partial<Article>>({
-    title: '',
-    category: 'water',
-    categoryLabel: 'เครื่องกรองน้ำ & RO',
-    summary: '',
-    readTime: '3 นาที',
-    date: 'อัปเดตล่าสุด 2026',
-    imageUrl: '',
-    keyPoints: [],
-    content: [],
-  });
-  const [articleKeyPointsRaw, setArticleKeyPointsRaw] = useState('');
-  const [articleContentRaw, setArticleContentRaw] = useState('');
-  const [articleSearch, setArticleSearch] = useState('');
-  const [articleCategoryFilter, setArticleCategoryFilter] = useState('all');
-  const [articleImageUploading, setArticleImageUploading] = useState(false);
-  const [articleImageStats, setArticleImageStats] = useState<string | null>(null);
 
   // Sync formData whenever modal opens or siteSettings changes
   React.useEffect(() => {
@@ -355,163 +321,6 @@ export const AdminModal: React.FC<AdminModalProps> = ({
   };
 
   // ==========================================
-  // 3. ARTICLE ACTIONS
-  // ==========================================
-  const handleArticleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setArticleImageUploading(true);
-    setArticleImageStats(null);
-    try {
-      const res = await storageService.uploadImage(file, 'articles', articleForm.imageUrl);
-      if (res.success && res.url) {
-        setArticleForm((prev) => ({ ...prev, imageUrl: res.url }));
-        const stats = res.originalSize && res.compressedSize
-          ? `บีบอัดจาก ${formatBytes(res.originalSize)} เหลือ ${formatBytes(res.compressedSize)}`
-          : 'อัปโหลดสำเร็จ';
-        setArticleImageStats(stats);
-        showToast('success', `อัปโหลดรูปภาพบทความสำเร็จ! (${stats})`);
-      } else {
-        showToast('error', res.error || 'อัปโหลดรูปภาพไม่สำเร็จ');
-      }
-    } catch (err: any) {
-      showToast('error', err.message || 'เกิดข้อผิดพลาดในการอัปโหลดรูป');
-    } finally {
-      setArticleImageUploading(false);
-    }
-  };
-
-  const handleOpenAddArticle = () => {
-    setEditingArticleId(null);
-    setArticleForm({
-      title: '',
-      category: 'water',
-      categoryLabel: 'เครื่องกรองน้ำ & RO',
-      summary: '',
-      readTime: '3 นาที',
-      date: 'อัปเดตล่าสุด 2026',
-      imageUrl: '',
-      keyPoints: [],
-      content: [],
-    });
-    setArticleKeyPointsRaw('');
-    setArticleContentRaw('');
-    setArticleImageStats(null);
-    setIsAddingArticle(true);
-  };
-
-  const handleOpenEditArticle = (art: Article) => {
-    setEditingArticleId(art.id);
-    setArticleForm({ ...art });
-    setArticleKeyPointsRaw(art.keyPoints ? art.keyPoints.join('\n') : '');
-    setArticleContentRaw(art.content ? art.content.join('\n\n') : '');
-    setArticleImageStats(null);
-    setIsAddingArticle(true);
-  };
-
-  const handleSaveArticleForm = () => {
-    if (!articleForm.title?.trim()) {
-      showToast('error', 'กรุณาระบุชื่อหัวข้อบทความ');
-      return;
-    }
-    if (!articleForm.summary?.trim()) {
-      showToast('error', 'กรุณาระบุเนื้อหาเกริ่นนำ (Summary)');
-      return;
-    }
-    if (!articleForm.imageUrl?.trim()) {
-      showToast('error', 'กรุณาระบุหรืออัปโหลดรูปภาพบทความ');
-      return;
-    }
-
-    const keyPoints = articleKeyPointsRaw
-      .split('\n')
-      .map((k) => k.trim())
-      .filter((k) => k.length > 0);
-
-    const content = articleContentRaw
-      .split('\n\n')
-      .map((c) => c.trim())
-      .filter((c) => c.length > 0);
-
-    const finalKeyPoints = keyPoints.length > 0 ? keyPoints : [articleForm.title!];
-    const finalContent = content.length > 0 ? content : [articleForm.summary!];
-
-    // Category label fallback
-    let catLabel = articleForm.categoryLabel;
-    if (!catLabel) {
-      if (articleForm.category === 'water') catLabel = 'เครื่องกรองน้ำ & RO';
-      else if (articleForm.category === 'service') catLabel = 'บริการ Cody Heart Service';
-      else if (articleForm.category === 'air') catLabel = 'เครื่องฟอกอากาศ & สุขภาพ';
-      else catLabel = 'สาระสุขภาพ & ความคุ้มค่า';
-    }
-
-    const existingArticles = formData.articles && formData.articles.length > 0
-      ? formData.articles
-      : DEFAULT_ARTICLES;
-
-    let updatedArticles: Article[];
-    if (editingArticleId) {
-      updatedArticles = existingArticles.map((art) =>
-        art.id === editingArticleId
-          ? {
-              ...art,
-              title: articleForm.title || art.title,
-              category: (articleForm.category as any) || art.category,
-              categoryLabel: catLabel || art.categoryLabel,
-              summary: articleForm.summary || art.summary,
-              readTime: articleForm.readTime || '3 นาที',
-              date: articleForm.date || 'อัปเดตล่าสุด 2026',
-              imageUrl: articleForm.imageUrl || art.imageUrl,
-              keyPoints: finalKeyPoints,
-              content: finalContent,
-            }
-          : art
-      );
-      showToast('success', 'แก้ไขข้อมูลบทความสำเร็จ! (กดบันทึกเพื่ออัปเดตลง Supabase)');
-    } else {
-      const newArticle: Article = {
-        id: `article-${Date.now()}`,
-        title: articleForm.title || '',
-        category: (articleForm.category as any) || 'water',
-        categoryLabel: catLabel || 'สาระน่ารู้',
-        summary: articleForm.summary || '',
-        readTime: articleForm.readTime || '3 นาที',
-        date: articleForm.date || 'อัปเดตล่าสุด 2026',
-        imageUrl: articleForm.imageUrl || '',
-        keyPoints: finalKeyPoints,
-        content: finalContent,
-      };
-      updatedArticles = [newArticle, ...existingArticles];
-      showToast('success', 'เพิ่มบทความใหม่เรียบร้อยแล้ว! (กดบันทึกเพื่ออัปเดตลง Supabase)');
-    }
-
-    setFormData((prev) => ({
-      ...prev,
-      articles: updatedArticles,
-    }));
-
-    setIsAddingArticle(false);
-    setEditingArticleId(null);
-  };
-
-  const handleDeleteArticle = (id: string, title: string) => {
-    if (!window.confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบบทความ "${title}"?`)) {
-      return;
-    }
-    const existingArticles = formData.articles && formData.articles.length > 0
-      ? formData.articles
-      : DEFAULT_ARTICLES;
-
-    const filtered = existingArticles.filter((a) => a.id !== id);
-    setFormData((prev) => ({
-      ...prev,
-      articles: filtered,
-    }));
-    showToast('success', 'ลบบทความออกจากรายการแล้ว (กดบันทึกเพื่อยืนยันลง Supabase)');
-  };
-
-  // ==========================================
   // 4. SAVE ALL SETTINGS TO SUPABASE
   // ==========================================
   const handleSaveAllSettings = async () => {
@@ -612,103 +421,67 @@ export const AdminModal: React.FC<AdminModalProps> = ({
         </header>
 
         {/* ========================================================= */}
-        {/* SUB-NAVIGATION TABS (Thumb-friendly & Scrollable) */}
+        {/* 5 CLEAR SUB-NAVIGATION TABS (Thumb-friendly & Scrollable) */}
         {/* ========================================================= */}
         <nav className="flex border-b border-slate-200 bg-slate-50 px-2 sm:px-6 overflow-x-auto scrollbar-none">
           <button
             onClick={() => setActiveTab('dashboard')}
-            className={`py-3.5 px-3 font-semibold text-xs sm:text-sm flex items-center gap-1.5 border-b-2 whitespace-nowrap transition-all cursor-pointer ${
+            className={`py-3.5 px-3.5 sm:px-4 font-semibold text-xs sm:text-sm flex items-center gap-2 border-b-2 whitespace-nowrap transition-all cursor-pointer ${
               activeTab === 'dashboard'
                 ? 'border-sky-600 text-sky-600 bg-white'
                 : 'border-transparent text-slate-600 hover:text-slate-900'
             }`}
           >
             <LayoutDashboard className="w-4 h-4" />
-            <span>Dashboard</span>
+            <span>1. Dashboard</span>
           </button>
 
           <button
             onClick={() => setActiveTab('products')}
-            className={`py-3.5 px-3 font-semibold text-xs sm:text-sm flex items-center gap-1.5 border-b-2 whitespace-nowrap transition-all cursor-pointer ${
+            className={`py-3.5 px-3.5 sm:px-4 font-semibold text-xs sm:text-sm flex items-center gap-2 border-b-2 whitespace-nowrap transition-all cursor-pointer ${
               activeTab === 'products'
                 ? 'border-sky-600 text-sky-600 bg-white'
                 : 'border-transparent text-slate-600 hover:text-slate-900'
             }`}
           >
             <Package className="w-4 h-4" />
-            <span>สินค้า ({products.length})</span>
+            <span>2. จัดการสินค้า ({products.length})</span>
           </button>
 
           <button
             onClick={() => setActiveTab('banners')}
-            className={`py-3.5 px-3 font-semibold text-xs sm:text-sm flex items-center gap-1.5 border-b-2 whitespace-nowrap transition-all cursor-pointer ${
+            className={`py-3.5 px-3.5 sm:px-4 font-semibold text-xs sm:text-sm flex items-center gap-2 border-b-2 whitespace-nowrap transition-all cursor-pointer ${
               activeTab === 'banners'
                 ? 'border-sky-600 text-sky-600 bg-white'
                 : 'border-transparent text-slate-600 hover:text-slate-900'
             }`}
           >
             <ImageIcon className="w-4 h-4" />
-            <span>แบนเนอร์ ({formData.banners.length})</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('articles')}
-            className={`py-3.5 px-3 font-semibold text-xs sm:text-sm flex items-center gap-1.5 border-b-2 whitespace-nowrap transition-all cursor-pointer ${
-              activeTab === 'articles'
-                ? 'border-sky-600 text-sky-600 bg-white'
-                : 'border-transparent text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <BookOpen className="w-4 h-4" />
-            <span>บทความ ({formData.articles?.length || DEFAULT_ARTICLES.length})</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('knowledge')}
-            className={`py-3.5 px-3 font-semibold text-xs sm:text-sm flex items-center gap-1.5 border-b-2 whitespace-nowrap transition-all cursor-pointer ${
-              activeTab === 'knowledge'
-                ? 'border-sky-600 text-sky-600 bg-white'
-                : 'border-transparent text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <Lightbulb className="w-4 h-4 text-amber-500" />
-            <span>สาระน่ารู้ ({formData.knowledgeTips?.length || DEFAULT_KNOWLEDGE_TIPS.length})</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('reviews')}
-            className={`py-3.5 px-3 font-semibold text-xs sm:text-sm flex items-center gap-1.5 border-b-2 whitespace-nowrap transition-all cursor-pointer ${
-              activeTab === 'reviews'
-                ? 'border-sky-600 text-sky-600 bg-white'
-                : 'border-transparent text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <MessageSquareQuote className="w-4 h-4 text-emerald-600" />
-            <span>รีวิว ({formData.customerReviews?.length || DEFAULT_CUSTOMER_REVIEWS.length})</span>
+            <span>3. จัดการแบนเนอร์ ({formData.banners.length})</span>
           </button>
 
           <button
             onClick={() => setActiveTab('contact')}
-            className={`py-3.5 px-3 font-semibold text-xs sm:text-sm flex items-center gap-1.5 border-b-2 whitespace-nowrap transition-all cursor-pointer ${
+            className={`py-3.5 px-3.5 sm:px-4 font-semibold text-xs sm:text-sm flex items-center gap-2 border-b-2 whitespace-nowrap transition-all cursor-pointer ${
               activeTab === 'contact'
                 ? 'border-sky-600 text-sky-600 bg-white'
                 : 'border-transparent text-slate-600 hover:text-slate-900'
             }`}
           >
             <Phone className="w-4 h-4" />
-            <span>ข้อมูลติดต่อ</span>
+            <span>4. ข้อมูลติดต่อ</span>
           </button>
 
           <button
             onClick={() => setActiveTab('settings')}
-            className={`py-3.5 px-3 font-semibold text-xs sm:text-sm flex items-center gap-1.5 border-b-2 whitespace-nowrap transition-all cursor-pointer ${
+            className={`py-3.5 px-3.5 sm:px-4 font-semibold text-xs sm:text-sm flex items-center gap-2 border-b-2 whitespace-nowrap transition-all cursor-pointer ${
               activeTab === 'settings'
                 ? 'border-sky-600 text-sky-600 bg-white'
                 : 'border-transparent text-slate-600 hover:text-slate-900'
             }`}
           >
             <Sliders className="w-4 h-4" />
-            <span>ตั้งค่าเว็บไซต์</span>
+            <span>5. ตั้งค่าเว็บไซต์</span>
           </button>
         </nav>
 
@@ -754,8 +527,8 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                 </div>
               </div>
 
-              {/* 4 Overview Stat Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* 3 Overview Stat Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 
                 {/* 1. Products Stat */}
                 <div className="bg-slate-50 p-5 rounded-3xl border border-slate-200 space-y-3">
@@ -799,31 +572,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                   </button>
                 </div>
 
-                {/* 3. Articles Stat */}
-                <div className="bg-slate-50 p-5 rounded-3xl border border-slate-200 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-slate-600">จำนวนบทความ</span>
-                    <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center">
-                      <BookOpen className="w-4 h-4" />
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-3xl font-extrabold text-slate-900">
-                      {formData.articles?.length || DEFAULT_ARTICLES.length}
-                    </div>
-                    <div className="text-xs text-slate-500 mt-1">
-                      บทความ & สาระน่ารู้เพื่อสุขภาพ
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setActiveTab('articles')}
-                    className="w-full py-2 bg-white hover:bg-slate-100 rounded-xl text-xs font-semibold text-blue-600 border border-slate-200 transition-colors cursor-pointer"
-                  >
-                    จัดการบทความ →
-                  </button>
-                </div>
-
-                {/* 4. Supabase Connection Status */}
+                {/* 3. Supabase Connection Status */}
                 <div className="bg-emerald-50/60 p-5 rounded-3xl border border-emerald-200 space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-emerald-800">สถานะการเชื่อมต่อ</span>
@@ -837,11 +586,11 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                       <span>Supabase Live</span>
                     </div>
                     <div className="text-xs text-emerald-700/80 mt-1">
-                      Storage: <span className="font-mono font-medium">{STORAGE_BUCKET}</span>
+                      Storage Bucket: <span className="font-mono font-medium">{STORAGE_BUCKET}</span>
                     </div>
                   </div>
                   <div className="text-[11px] text-emerald-700 bg-white/80 p-2 rounded-xl border border-emerald-100">
-                    สิทธิ์: RLS Authenticated
+                    สิทธิ์ความปลอดภัย: RLS Authenticated
                   </div>
                 </div>
 
@@ -1415,375 +1164,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
           )}
 
           {/* ------------------------------------------------------- */}
-          {/* TAB 4: จัดการบทความ (ARTICLES MANAGEMENT) */}
-          {/* ------------------------------------------------------- */}
-          {activeTab === 'articles' && (
-            <div className="space-y-6 animate-in fade-in">
-              {/* Header Bar */}
-              <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
-                <div>
-                  <h3 className="font-bold text-slate-900 text-base sm:text-lg flex items-center gap-2">
-                    <BookOpen className="w-5 h-5 text-sky-600" />
-                    <span>จัดการบทความ & สาระน่ารู้เพื่อสุขภาพ</span>
-                  </h3>
-                  <p className="text-xs text-slate-500">
-                    เพิ่ม แก้ไข ลบ และเปลี่ยนรูปภาพบทความที่สนับสนุนให้ลูกค้าตัดสินใจเลือกใช้ Coway
-                  </p>
-                </div>
-                {!isAddingArticle && (
-                  <button
-                    onClick={handleOpenAddArticle}
-                    className="px-4 py-2.5 bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold rounded-2xl flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs shrink-0"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>➕ เพิ่มบทความใหม่</span>
-                  </button>
-                )}
-              </div>
-
-              {/* Search & Category Filter Toolbar */}
-              {!isAddingArticle && (
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <div className="flex-1 relative">
-                    <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input
-                      type="text"
-                      placeholder="ค้นหาชื่อบทความ หรือเนื้อหา..."
-                      value={articleSearch}
-                      onChange={(e) => setArticleSearch(e.target.value)}
-                      className="w-full pl-9 pr-4 py-2 bg-slate-50 rounded-xl border border-slate-200 text-xs focus:outline-sky-500"
-                    />
-                  </div>
-
-                  <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-                    {[
-                      { id: 'all', label: 'ทั้งหมด' },
-                      { id: 'water', label: 'เครื่องกรองน้ำ' },
-                      { id: 'service', label: 'บริการ Cody' },
-                      { id: 'air', label: 'เครื่องฟอกอากาศ' },
-                      { id: 'health', label: 'สุขภาพ & ความคุ้มค่า' },
-                    ].map((cat) => (
-                      <button
-                        key={cat.id}
-                        onClick={() => setArticleCategoryFilter(cat.id)}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-colors cursor-pointer ${
-                          articleCategoryFilter === cat.id
-                            ? 'bg-sky-600 text-white font-semibold'
-                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                        }`}
-                      >
-                        {cat.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Add / Edit Article Form */}
-              {isAddingArticle && (
-                <div className="p-5 sm:p-7 bg-sky-50/70 rounded-3xl border-2 border-sky-300 space-y-5 animate-in fade-in">
-                  <div className="flex justify-between items-center pb-3 border-b border-sky-200">
-                    <span className="font-bold text-base text-sky-950 flex items-center gap-2">
-                      <BookOpen className="w-5 h-5 text-sky-600" />
-                      <span>{editingArticleId ? '✏️ แก้ไขข้อมูลบทความ' : '➕ เพิ่มบทความใหม่ลงเว็บไซต์'}</span>
-                    </span>
-                    <button
-                      onClick={() => {
-                        setIsAddingArticle(false);
-                        setEditingArticleId(null);
-                      }}
-                      className="p-1.5 text-slate-400 hover:text-slate-700 bg-white rounded-full transition-colors cursor-pointer"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                    {/* Article Title */}
-                    <div className="sm:col-span-2">
-                      <label className="block text-slate-800 font-bold mb-1">
-                        หัวข้อบทความ (Title) <span className="text-rose-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={articleForm.title || ''}
-                        onChange={(e) => setArticleForm({ ...articleForm, title: e.target.value })}
-                        placeholder="เช่น ทำไมคนรุ่นใหม่ถึงเปลี่ยนจากน้ำขวดแพ็คมาใช้ Coway Subscription?"
-                        className="w-full px-3.5 py-2.5 bg-white rounded-xl border border-slate-300 focus:outline-sky-500 text-xs sm:text-sm font-semibold text-slate-900"
-                      />
-                    </div>
-
-                    {/* Category Selector */}
-                    <div>
-                      <label className="block text-slate-700 font-semibold mb-1">หมวดหมู่บทความ</label>
-                      <select
-                        value={articleForm.category || 'water'}
-                        onChange={(e) => {
-                          const cat = e.target.value as any;
-                          let label = 'เครื่องกรองน้ำ & RO';
-                          if (cat === 'service') label = 'บริการ Cody Heart Service';
-                          else if (cat === 'air') label = 'เครื่องฟอกอากาศ & สุขภาพ';
-                          else if (cat === 'health') label = 'ความคุ้มค่า & ไลฟ์สไตล์';
-                          setArticleForm({
-                            ...articleForm,
-                            category: cat,
-                            categoryLabel: label,
-                          });
-                        }}
-                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 focus:outline-sky-500 cursor-pointer"
-                      >
-                        <option value="water">เครื่องกรองน้ำ & RO (Water Purifier)</option>
-                        <option value="service">บริการหลังการขาย (Cody Heart Service)</option>
-                        <option value="air">เครื่องฟอกอากาศ & PM 2.5 (Air Purifier)</option>
-                        <option value="health">ความคุ้มค่า & ไลฟ์สไตล์สุขภาพ (Health & Value)</option>
-                      </select>
-                    </div>
-
-                    {/* Category Label Custom Text */}
-                    <div>
-                      <label className="block text-slate-700 font-semibold mb-1">ป้ายกำกับหมวดหมู่ (Category Badge)</label>
-                      <input
-                        type="text"
-                        value={articleForm.categoryLabel || ''}
-                        onChange={(e) => setArticleForm({ ...articleForm, categoryLabel: e.target.value })}
-                        placeholder="เช่น ความคุ้มค่า & ไลฟ์สไตล์"
-                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 focus:outline-sky-500"
-                      />
-                    </div>
-
-                    {/* Read Time */}
-                    <div>
-                      <label className="block text-slate-700 font-semibold mb-1">ระยะเวลาในการอ่าน</label>
-                      <input
-                        type="text"
-                        value={articleForm.readTime || '3 นาที'}
-                        onChange={(e) => setArticleForm({ ...articleForm, readTime: e.target.value })}
-                        placeholder="เช่น 3 นาที"
-                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 focus:outline-sky-500"
-                      />
-                    </div>
-
-                    {/* Date / Update Tag */}
-                    <div>
-                      <label className="block text-slate-700 font-semibold mb-1">วันที่ / แท็กอัปเดต</label>
-                      <input
-                        type="text"
-                        value={articleForm.date || 'อัปเดตล่าสุด 2026'}
-                        onChange={(e) => setArticleForm({ ...articleForm, date: e.target.value })}
-                        placeholder="เช่น อัปเดตล่าสุด 2026"
-                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 focus:outline-sky-500"
-                      />
-                    </div>
-
-                    {/* Summary */}
-                    <div className="sm:col-span-2">
-                      <label className="block text-slate-800 font-bold mb-1">
-                        คำโปรย / สรุปย่อของบทความ (Summary) <span className="text-rose-500">*</span>
-                      </label>
-                      <textarea
-                        rows={3}
-                        required
-                        value={articleForm.summary || ''}
-                        onChange={(e) => setArticleForm({ ...articleForm, summary: e.target.value })}
-                        placeholder="สรุปเนื้อหาสำคัญ 2-3 บรรทัด สำหรับแสดงบนการ์ดหน้าเว็บ..."
-                        className="w-full px-3.5 py-2.5 bg-white rounded-xl border border-slate-300 focus:outline-sky-500 leading-relaxed"
-                      />
-                    </div>
-
-                    {/* Image Upload & URL */}
-                    <div className="sm:col-span-2 space-y-2">
-                      <label className="block text-slate-800 font-bold">
-                        รูปภาพปกบทความ (อัปโหลดเข้า Supabase Storage หรือวาง URL) <span className="text-rose-500">*</span>
-                      </label>
-                      <div className="flex flex-col sm:flex-row gap-2">
-                        <input
-                          type="text"
-                          required
-                          value={articleForm.imageUrl || ''}
-                          onChange={(e) => setArticleForm({ ...articleForm, imageUrl: e.target.value })}
-                          placeholder="https://images.unsplash.com/... หรือกดปุ่มอัปโหลดรูป"
-                          className="flex-1 px-3.5 py-2.5 bg-white rounded-xl border border-slate-300 focus:outline-sky-500 font-mono text-xs"
-                        />
-                        <label className="px-4 py-2.5 bg-slate-900 hover:bg-sky-600 text-white font-semibold rounded-xl flex items-center justify-center gap-1.5 cursor-pointer shrink-0 transition-colors">
-                          {articleImageUploading ? (
-                            <>
-                              <Loader2 className="w-4 h-4 animate-spin text-white" />
-                              <span>กำลังอัปโหลด...</span>
-                            </>
-                          ) : (
-                            <>
-                              <Upload className="w-4 h-4 text-white" />
-                              <span>เลือกรูปจากอุปกรณ์</span>
-                            </>
-                          )}
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleArticleImageUpload}
-                            className="hidden"
-                            disabled={articleImageUploading}
-                          />
-                        </label>
-                      </div>
-
-                      {/* Image Preview & Compression Stats */}
-                      {articleForm.imageUrl && (
-                        <div className="p-3 bg-white rounded-2xl border border-slate-200 flex items-center gap-3 animate-in fade-in">
-                          <div className="w-24 h-16 bg-slate-100 rounded-xl overflow-hidden border border-slate-200 shrink-0">
-                            <img src={articleForm.imageUrl} alt="รูปบทความ" className="w-full h-full object-cover" />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <span className="text-xs font-bold text-slate-800 block truncate">{articleForm.title || 'ตัวอย่างรูปบทความ'}</span>
-                            <span className="text-[11px] text-emerald-600 font-medium block">
-                              🟢 {articleImageStats || 'รูปภาพพร้อมบันทึกลงฐานข้อมูล Supabase'}
-                            </span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Key Takeaways (Bullet Points) */}
-                    <div className="sm:col-span-2">
-                      <label className="block text-slate-800 font-bold mb-1 flex items-center justify-between">
-                        <span>จุดเด่น / สรุปสาระสำคัญ (Key Takeaways)</span>
-                        <span className="text-[11px] text-slate-500 font-normal">พิมพ์ 1 ข้อต่อ 1 บรรทัด</span>
-                      </label>
-                      <textarea
-                        rows={3}
-                        value={articleKeyPointsRaw}
-                        onChange={(e) => setArticleKeyPointsRaw(e.target.value)}
-                        placeholder={'ประหยัดกว่าซื้อน้ำขวดปีละ 10,000 บาท\nมีบริการ Cody ล้างถังและเปลี่ยนไส้กรองฟรีถึงบ้าน\nได้มาตรฐานรับรอง WQA Gold Seal'}
-                        className="w-full px-3.5 py-2.5 bg-white rounded-xl border border-slate-300 focus:outline-sky-500 font-sans text-xs leading-relaxed"
-                      />
-                    </div>
-
-                    {/* Full Content Paragraphs */}
-                    <div className="sm:col-span-2">
-                      <label className="block text-slate-800 font-bold mb-1 flex items-center justify-between">
-                        <span>เนื้อหาบทความฉบับเต็ม (Full Article Content)</span>
-                        <span className="text-[11px] text-slate-500 font-normal">เว้นบรรทัด 2 ครั้ง (กด Enter 2 ครั้ง) เพื่อขึ้นย่อหน้าใหม่</span>
-                      </label>
-                      <textarea
-                        rows={5}
-                        value={articleContentRaw}
-                        onChange={(e) => setArticleContentRaw(e.target.value)}
-                        placeholder={'ย่อหน้าที่ 1: เกริ่นนำปัญหาเรื่องค่าน้ำดื่มและการแบกน้ำหนักเข้าบ้าน...\n\nย่อหน้าที่ 2: อธิบายว่าเครื่องกรองน้ำระบบสมาชิก Coway เข้ามาช่วยแก้ปัญหานี้ได้อย่างไร...\n\nย่อหน้าที่ 3: สรุปความคุ้มค่าและบริการ Cody Heart Service ดูแลฟรีตลอดสัญญา...'}
-                        className="w-full px-3.5 py-2.5 bg-white rounded-xl border border-slate-300 focus:outline-sky-500 font-sans text-xs leading-relaxed"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Form Action Buttons */}
-                  <div className="flex items-center justify-end gap-3 pt-3 border-t border-sky-200">
-                    <button
-                      onClick={() => {
-                        setIsAddingArticle(false);
-                        setEditingArticleId(null);
-                      }}
-                      className="px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-xl border border-slate-300 transition-colors cursor-pointer"
-                    >
-                      ยกเลิก
-                    </button>
-                    <button
-                      onClick={handleSaveArticleForm}
-                      className="px-5 py-2 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-xl transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
-                    >
-                      <Save className="w-4 h-4" />
-                      <span>{editingArticleId ? 'อัปเดตบทความ' : 'บันทึกบทความ'}</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Articles Cards Grid List */}
-              {!isAddingArticle && (
-                <div className="space-y-3">
-                  {(() => {
-                    const articlesList = formData.articles && formData.articles.length > 0
-                      ? formData.articles
-                      : DEFAULT_ARTICLES;
-
-                    const filtered = articlesList.filter((a) => {
-                      const matchesSearch =
-                        a.title.toLowerCase().includes(articleSearch.toLowerCase()) ||
-                        a.summary.toLowerCase().includes(articleSearch.toLowerCase());
-                      const matchesCat = articleCategoryFilter === 'all' || a.category === articleCategoryFilter;
-                      return matchesSearch && matchesCat;
-                    });
-
-                    if (filtered.length === 0) {
-                      return (
-                        <div className="text-center py-12 bg-slate-50 rounded-3xl border border-dashed border-slate-300 space-y-2">
-                          <FileText className="w-10 h-10 text-slate-400 mx-auto" />
-                          <h4 className="text-sm font-bold text-slate-800">ไม่พบบทความที่ค้นหา</h4>
-                          <p className="text-xs text-slate-500">ลองเปลี่ยนคำค้นหาหรือกดปุ่ม "เพิ่มบทความใหม่"</p>
-                        </div>
-                      );
-                    }
-
-                    return (
-                      <div className="grid grid-cols-1 gap-3">
-                        {filtered.map((art) => (
-                          <div
-                            key={art.id}
-                            className="bg-white p-4 rounded-2xl border border-slate-200 hover:border-slate-300 transition-all flex flex-col md:flex-row items-start md:items-center justify-between gap-4 group"
-                          >
-                            {/* Left: Thumbnail & Info */}
-                            <div className="flex items-start sm:items-center gap-3.5 flex-1 min-w-0">
-                              <div className="w-24 sm:w-28 h-20 bg-slate-100 rounded-xl overflow-hidden shrink-0 border border-slate-200 relative">
-                                <img src={art.imageUrl} alt={art.title} className="w-full h-full object-cover" />
-                              </div>
-
-                              <div className="flex-1 min-w-0 space-y-1">
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <span className="px-2 py-0.5 bg-sky-100 text-sky-800 text-[10px] font-bold rounded-md">
-                                    {art.categoryLabel || 'สาระน่ารู้'}
-                                  </span>
-                                  <span className="text-[11px] text-slate-400 flex items-center gap-1">
-                                    <Clock className="w-3 h-3" />
-                                    <span>{art.readTime || '3 นาที'}</span>
-                                  </span>
-                                </div>
-                                <h4 className="font-bold text-slate-900 text-xs sm:text-sm truncate" title={art.title}>
-                                  {art.title}
-                                </h4>
-                                <p className="text-[11px] text-slate-500 line-clamp-1 max-w-xl">
-                                  {art.summary}
-                                </p>
-                              </div>
-                            </div>
-
-                            {/* Right: Actions */}
-                            <div className="flex items-center gap-2 w-full md:w-auto justify-end border-t md:border-t-0 pt-2 md:pt-0">
-                              <button
-                                onClick={() => handleOpenEditArticle(art)}
-                                className="px-3 py-1.5 bg-slate-100 hover:bg-sky-50 text-slate-700 hover:text-sky-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer border border-slate-200"
-                              >
-                                <Edit className="w-3.5 h-3.5" />
-                                <span>แก้ไข</span>
-                              </button>
-
-                              <button
-                                onClick={() => handleDeleteArticle(art.id, art.title)}
-                                className="p-2 rounded-xl text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors cursor-pointer"
-                                title="ลบบทความนี้"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  })()}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* ------------------------------------------------------- */}
-          {/* TAB 5: ข้อมูลติดต่อ (CONTACT & SOCIAL) */}
+          {/* TAB 4: ข้อมูลติดต่อ (CONTACT & SOCIAL) */}
           {/* ------------------------------------------------------- */}
           {activeTab === 'contact' && (
             <div className="space-y-6 animate-in fade-in">

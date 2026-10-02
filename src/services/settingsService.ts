@@ -1,6 +1,6 @@
 import { supabase, isSupabaseConfigured } from './supabaseClient';
 import { storageService, STORAGE_BUCKET, UploadResult } from './storageService';
-import { SiteSettings, DEFAULT_SITE_SETTINGS, HeroBanner, Article, KnowledgeTip, CustomerReviewItem } from '../types/settings';
+import { SiteSettings, DEFAULT_SITE_SETTINGS, HeroBanner } from '../types/settings';
 
 export interface StorageUploadResult {
   success: boolean;
@@ -42,24 +42,6 @@ class SettingsService {
           ? JSON.parse(data.banners)
           : DEFAULT_SITE_SETTINGS.banners;
 
-        const articles: Article[] = Array.isArray(data.articles)
-          ? data.articles
-          : typeof data.articles === 'string'
-          ? JSON.parse(data.articles)
-          : (DEFAULT_SITE_SETTINGS.articles || []);
-
-        const knowledgeTips: KnowledgeTip[] = Array.isArray(data.knowledge_tips || data.knowledgeTips)
-          ? (data.knowledge_tips || data.knowledgeTips)
-          : typeof (data.knowledge_tips || data.knowledgeTips) === 'string'
-          ? JSON.parse(data.knowledge_tips || data.knowledgeTips)
-          : (DEFAULT_SITE_SETTINGS.knowledgeTips || []);
-
-        const customerReviews: CustomerReviewItem[] = Array.isArray(data.customer_reviews || data.customerReviews)
-          ? (data.customer_reviews || data.customerReviews)
-          : typeof (data.customer_reviews || data.customerReviews) === 'string'
-          ? JSON.parse(data.customer_reviews || data.customerReviews)
-          : (DEFAULT_SITE_SETTINGS.customerReviews || []);
-
         const merged: SiteSettings = {
           id: 'main',
           siteName: data.site_name || DEFAULT_SITE_SETTINGS.siteName,
@@ -80,16 +62,13 @@ class SettingsService {
           contactAddress: data.contact_address || DEFAULT_SITE_SETTINGS.contactAddress,
           contactHours: data.contact_hours || DEFAULT_SITE_SETTINGS.contactHours,
           banners: banners && banners.length > 0 ? banners : DEFAULT_SITE_SETTINGS.banners,
-          articles: articles && articles.length > 0 ? articles : (DEFAULT_SITE_SETTINGS.articles || []),
-          knowledgeTips: knowledgeTips && knowledgeTips.length > 0 ? knowledgeTips : (DEFAULT_SITE_SETTINGS.knowledgeTips || []),
-          customerReviews: customerReviews && customerReviews.length > 0 ? customerReviews : (DEFAULT_SITE_SETTINGS.customerReviews || []),
           updatedAt: data.updated_at,
         };
 
         return { settings: merged, source: 'supabase' };
       }
 
-      // If no row exists yet, bootstrap with default settings
+      // If no row exists yet, attempt to bootstrap with default settings
       await this.saveSettings(DEFAULT_SITE_SETTINGS);
       return { settings: DEFAULT_SITE_SETTINGS, source: 'supabase' };
     } catch (err: any) {
@@ -130,9 +109,6 @@ class SettingsService {
         contact_address: settings.contactAddress,
         contact_hours: settings.contactHours,
         banners: settings.banners,
-        articles: settings.articles || [],
-        knowledge_tips: settings.knowledgeTips || [],
-        customer_reviews: settings.customerReviews || [],
         updated_at: new Date().toISOString(),
       };
 
@@ -140,9 +116,9 @@ class SettingsService {
         .from('site_settings')
         .upsert(payload, { onConflict: 'id' });
 
-      // Fallback: If extra columns do not exist in table yet, try core columns payload
+      // Fallback: If optional columns (logo_url, facebook_url, facebook_name) do not exist yet in table, save core columns
       if (error && (error.message.includes('column') && error.message.includes('site_settings'))) {
-        const fallbackPayload = {
+        const corePayload = {
           id: 'main',
           site_name: settings.siteName,
           site_tagline: settings.siteTagline,
@@ -158,12 +134,11 @@ class SettingsService {
           contact_address: settings.contactAddress,
           contact_hours: settings.contactHours,
           banners: settings.banners,
-          articles: settings.articles || [],
           updated_at: new Date().toISOString(),
         };
         const retryRes = await supabase
           .from('site_settings')
-          .upsert(fallbackPayload, { onConflict: 'id' });
+          .upsert(corePayload, { onConflict: 'id' });
         error = retryRes.error;
       }
 
@@ -177,7 +152,7 @@ class SettingsService {
 
       return {
         success: true,
-        message: 'บันทึกข้อมูลเนื้อหาเว็บไซต์ลง Supabase สำเร็จเรียบร้อยแล้ว!',
+        message: 'บันทึกการตั้งค่าเว็บไซต์ลง Supabase สำเร็จเรียบร้อยแล้ว!',
       };
     } catch (err: any) {
       return {
@@ -188,11 +163,11 @@ class SettingsService {
   }
 
   /**
-   * Upload an image to Supabase Storage bucket 'site-images' with client compression
+   * Upload an image to Supabase Storage bucket 'website-assets' with client compression
    */
   async uploadAsset(
     file: File,
-    folder: 'banners' | 'articles' | 'knowledge' | 'reviews' | 'products' | 'logo' = 'banners',
+    folder: 'banners' | 'products' = 'banners',
     oldUrl?: string
   ): Promise<StorageUploadResult> {
     return storageService.uploadImage(file, folder, oldUrl);

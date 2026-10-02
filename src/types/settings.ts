@@ -1,8 +1,3 @@
-import { Article } from './article';
-import { KnowledgeTip, DEFAULT_KNOWLEDGE_TIPS } from '../data/defaultKnowledge';
-import { CustomerReviewItem, DEFAULT_CUSTOMER_REVIEWS } from '../data/defaultReviews';
-import { DEFAULT_ARTICLES } from '../data/defaultArticles';
-
 export interface HeroBanner {
   id: string;
   title: string;
@@ -13,8 +8,6 @@ export interface HeroBanner {
   isActive: boolean;
   order: number;
 }
-
-export type { Article, KnowledgeTip, CustomerReviewItem };
 
 export interface SiteSettings {
   id: string;
@@ -36,9 +29,6 @@ export interface SiteSettings {
   contactAddress: string;
   contactHours: string;
   banners: HeroBanner[];
-  articles?: Article[];
-  knowledgeTips?: KnowledgeTip[];
-  customerReviews?: CustomerReviewItem[];
   updatedAt?: string;
 }
 
@@ -83,7 +73,4 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
       order: 2,
     },
   ],
-  articles: DEFAULT_ARTICLES,
-  knowledgeTips: DEFAULT_KNOWLEDGE_TIPS,
-  customerReviews: DEFAULT_CUSTOMER_REVIEWS,
 };
