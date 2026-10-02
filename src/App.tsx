@@ -4,9 +4,9 @@ import { Hero } from './components/Hero';
 import { ServiceHighlights } from './components/ServiceHighlights';
 import { ProductCatalog } from './components/ProductCatalog';
 import { WaterSavingsCalculator } from './components/WaterSavingsCalculator';
-import { AboutSection } from './components/AboutSection';
-import { KnowledgeSection } from './components/KnowledgeSection';
 import { ArticlesSection } from './components/ArticlesSection';
+import { AboutSection } from './components/AboutSection';
+import { ContactSection } from './components/ContactSection';
 import { ProductDetailModal } from './components/ProductDetailModal';
 import { ProductComparisonModal } from './components/ProductComparisonModal';
 import { InquiryDrawer } from './components/InquiryDrawer';
@@ -276,14 +276,14 @@ export default function App() {
           onSelectRecommendedModel={handleSelectRecommendedModel}
         />
 
-        {/* 5. Health Knowledge Tips */}
-        <KnowledgeSection siteSettings={siteSettings} />
+        {/* 5. Health Articles & Knowledge Tips (2 articles each with matching images) */}
+        <ArticlesSection />
 
-        {/* 6. Health & Value Articles */}
-        <ArticlesSection siteSettings={siteSettings} />
+        {/* 6. About Us & Customer Reviews */}
+        <AboutSection />
 
-        {/* 7. About Us & Customer Reviews */}
-        <AboutSection siteSettings={siteSettings} />
+        {/* 6. Contact & Consultation Request Form */}
+        <ContactSection siteSettings={siteSettings} />
       </main>
 
       {/* Footer */}
