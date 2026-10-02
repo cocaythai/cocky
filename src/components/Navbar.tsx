@@ -23,6 +23,32 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // Secret 5-click mechanism on logo to enter Admin portal
+  const [logoClickCount, setLogoClickCount] = useState(0);
+  const clickTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  const handleLogoClick = () => {
+    handleLinkClick('hero');
+
+    const newCount = logoClickCount + 1;
+    setLogoClickCount(newCount);
+
+    if (clickTimeoutRef.current) {
+      clearTimeout(clickTimeoutRef.current);
+    }
+
+    if (newCount >= 5) {
+      setLogoClickCount(0);
+      if (onOpenAdmin) {
+        onOpenAdmin();
+      }
+    } else {
+      clickTimeoutRef.current = setTimeout(() => {
+        setLogoClickCount(0);
+      }, 3000);
+    }
+  };
+
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
@@ -57,8 +83,9 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="flex items-center justify-between">
           {/* Zone 1: Single text element wordmark or Custom Logo */}
           <button
-            onClick={() => handleLinkClick('hero')}
-            className="flex items-center gap-1.5 text-left group cursor-pointer focus:outline-hidden"
+            onClick={handleLogoClick}
+            className="flex items-center gap-1.5 text-left group cursor-pointer focus:outline-hidden active:scale-95 transition-transform select-none"
+            title="COWAY THAIPLUS"
           >
             {siteSettings?.logoUrl ? (
               <img
@@ -145,18 +172,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               <Phone className="w-3.5 h-3.5 text-white" />
               <span>{siteSettings?.phoneDisplay || '02-000-0000'}</span>
             </a>
-
-            {/* Admin Portal Button */}
-            {onOpenAdmin && (
-              <button
-                onClick={onOpenAdmin}
-                title="เข้าสู่ระบบจัดการหลังบ้าน (Admin)"
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors cursor-pointer"
-              >
-                <Settings className="w-3.5 h-3.5 text-slate-600" />
-                <span className="text-[11px]">Admin</span>
-              </button>
-            )}
 
             {/* Mobile Menu Toggle Button */}
             <button
