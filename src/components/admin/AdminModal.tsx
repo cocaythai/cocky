@@ -88,18 +88,6 @@ export const AdminModal: React.FC<AdminModalProps> = ({
   const [isUploading, setIsUploading] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  // Banner Management State
-  const [isAddingBanner, setIsAddingBanner] = useState(false);
-  const [newBanner, setNewBanner] = useState<Partial<HeroBanner>>({
-    title: '',
-    subtitle: '',
-    imageUrl: '',
-    buttonText: 'ดูรายละเอียด',
-    buttonLink: '#products',
-    isActive: true,
-  });
-  const [editingBannerId, setEditingBannerId] = useState<string | null>(null);
-
   // Product Management State
   const [isAddingProduct, setIsAddingProduct] = useState(false);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
@@ -157,113 +145,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
   };
 
   // ==========================================
-  // 1. BANNER ACTIONS
-  // ==========================================
-  const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>, bannerId?: string) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const uploadKey = bannerId || 'new';
-    setIsUploading(uploadKey);
-    try {
-      const oldUrl = bannerId ? formData.banners.find((b) => b.id === bannerId)?.imageUrl : undefined;
-      const res = await storageService.uploadImage(file, 'banners', oldUrl);
-      if (res.success && res.url) {
-        if (bannerId) {
-          setFormData((prev) => ({
-            ...prev,
-            banners: prev.banners.map((b) => (b.id === bannerId ? { ...b, imageUrl: res.url! } : b)),
-          }));
-        } else {
-          setNewBanner((prev) => ({ ...prev, imageUrl: res.url }));
-        }
-        const sizeInfo = res.originalSize && res.compressedSize
-          ? ` (บีบอัดจาก ${formatBytes(res.originalSize)} เหลือ ${formatBytes(res.compressedSize)})`
-          : '';
-        showToast('success', `อัปโหลดรูปภาพลง Supabase Storage สำเร็จ!${sizeInfo}`);
-      } else {
-        showToast('error', res.error || 'อัปโหลดรูปภาพไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
-      }
-    } catch (err: any) {
-      showToast('error', err.message || 'เกิดข้อผิดพลาดในการอัปโหลด');
-    } finally {
-      setIsUploading(null);
-    }
-  };
-
-  const handleAddNewBanner = () => {
-    if (!newBanner.title || !newBanner.imageUrl) {
-      showToast('error', 'กรุณาระบุหัวข้อและรูปภาพแบนเนอร์');
-      return;
-    }
-
-    const created: HeroBanner = {
-      id: `banner-${Date.now()}`,
-      title: newBanner.title || '',
-      subtitle: newBanner.subtitle || '',
-      imageUrl: newBanner.imageUrl || '',
-      buttonText: newBanner.buttonText || 'ดูรายละเอียด',
-      buttonLink: newBanner.buttonLink || '#products',
-      isActive: true,
-      order: formData.banners.length + 1,
-    };
-
-    setFormData((prev) => ({
-      ...prev,
-      banners: [...prev.banners, created],
-    }));
-
-    setNewBanner({
-      title: '',
-      subtitle: '',
-      imageUrl: '',
-      buttonText: 'ดูรายละเอียด',
-      buttonLink: '#products',
-      isActive: true,
-    });
-    setIsAddingBanner(false);
-    showToast('success', 'เพิ่มแบนเนอร์ใหม่ในรายการแล้ว (กดบันทึกเพื่อบันทึกลง Supabase)');
-  };
-
-  const handleToggleBannerActive = (bannerId: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      banners: prev.banners.map((b) => (b.id === bannerId ? { ...b, isActive: !b.isActive } : b)),
-    }));
-  };
-
-  const handleMoveBanner = (index: number, direction: 'up' | 'down') => {
-    const newBanners = [...formData.banners];
-    const targetIdx = direction === 'up' ? index - 1 : index + 1;
-    if (targetIdx < 0 || targetIdx >= newBanners.length) return;
-
-    const temp = newBanners[index];
-    newBanners[index] = newBanners[targetIdx];
-    newBanners[targetIdx] = temp;
-
-    // Re-index orders
-    const reordered = newBanners.map((b, i) => ({ ...b, order: i + 1 }));
-    setFormData((prev) => ({ ...prev, banners: reordered }));
-  };
-
-  const handleDeleteBanner = (bannerId: string) => {
-    if (formData.banners.length <= 1) {
-      showToast('error', 'ต้องมีแบนเนอร์อย่างน้อย 1 รายการ');
-      return;
-    }
-    const targetBanner = formData.banners.find((b) => b.id === bannerId);
-    if (targetBanner?.imageUrl) {
-      storageService.deleteImageByUrl(targetBanner.imageUrl).catch(() => {});
-    }
-    setFormData((prev) => ({
-      ...prev,
-      banners: prev.banners.filter((b) => b.id !== bannerId),
-    }));
-    showToast('success', 'ลบแบนเนอร์และจัดการไฟล์ใน Storage แล้ว');
-  };
-
-  // ==========================================
-  // 2. LOGO UPLOAD ACTION
+  // 1. LOGO UPLOAD ACTION
   // ==========================================
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1019,10 +901,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                   </button>
 
                   <button
-                    onClick={() => {
-                      setActiveTab('banners');
-                      setIsAddingBanner(true);
-                    }}
+                    onClick={() => setActiveTab('banners')}
                     className="p-3 bg-white hover:bg-sky-50 hover:border-sky-300 rounded-2xl border border-slate-200 text-slate-800 text-left transition-all cursor-pointer"
                   >
                     <Plus className="w-4 h-4 text-sky-600 mb-1" />

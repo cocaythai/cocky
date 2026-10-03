@@ -1,9 +1,10 @@
 import { supabase, isSupabaseConfigured } from './supabaseClient';
-import { storageService, STORAGE_BUCKET, UploadResult } from './storageService';
-import { SiteSettings, DEFAULT_SITE_SETTINGS, HeroBanner, Article, KnowledgeTip, CustomerReviewItem } from '../types/settings';
-import heroImgFallback from '../assets/images/hero_coway_kitchen_1790923059004.jpg';
-import neoPlusImg from '../assets/images/coway_neo_plus_1790923072942.jpg';
-import myIceImg from '../assets/images/coway_my_ice_1790923084460.jpg';
+import { storageService, STORAGE_BUCKET } from './storageService';
+import { bannerService } from './bannerService';
+import { SiteSettings, DEFAULT_SITE_SETTINGS, HeroBanner } from '../types/settings';
+import { DEFAULT_ARTICLES } from '../data/defaultArticles';
+import { DEFAULT_KNOWLEDGE_TIPS } from '../data/defaultKnowledge';
+import { DEFAULT_CUSTOMER_REVIEWS } from '../data/defaultReviews';
 
 export interface StorageUploadResult {
   success: boolean;
@@ -15,37 +16,8 @@ export interface StorageUploadResult {
 
 class SettingsService {
   /**
-   * Helper to normalize banner data from Supabase, removing Unsplash and supporting both camelCase and snake_case
-   */
-  private normalizeBanner(b: any, index: number): HeroBanner {
-    let imageUrl = b.imageUrl || b.image_url || '';
-
-    // Requirement 7: Replace Unsplash or dummy URL with actual Coway image
-    if (!imageUrl || imageUrl.includes('unsplash.com')) {
-      imageUrl = index === 0 ? neoPlusImg : index === 1 ? myIceImg : heroImgFallback;
-    }
-
-    const isActive = b.isActive !== undefined ? Boolean(b.isActive) : (b.is_active !== undefined ? Boolean(b.is_active) : true);
-    const order = typeof b.order === 'number' ? b.order : (typeof b.order_index === 'number' ? b.order_index : index + 1);
-
-    return {
-      id: b.id || `banner-${Date.now()}-${index}`,
-      title: b.title || `แบนเนอร์ Coway ${index + 1}`,
-      subtitle: b.subtitle || '',
-      imageUrl,
-      image_url: imageUrl,
-      buttonText: b.buttonText || b.button_text || 'ดูรายละเอียด',
-      button_text: b.buttonText || b.button_text || 'ดูรายละเอียด',
-      buttonLink: b.buttonLink || b.button_link || '#products',
-      button_link: b.buttonLink || b.button_link || '#products',
-      isActive,
-      is_active: isActive,
-      order,
-    };
-  }
-
-  /**
    * Fetch site settings from Supabase table 'site_settings'
+   * Note: 'articles', 'knowledge_tips', and 'customer_reviews' are kept separate and not queried from site_settings
    */
   async getSettings(): Promise<{ settings: SiteSettings; source: 'supabase' | 'default'; error?: string }> {
     if (!isSupabaseConfigured() || !supabase) {
@@ -53,7 +25,7 @@ class SettingsService {
     }
 
     try {
-      // 1. Try fetching from site_settings
+      // 1. Fetch site_settings - only query existing columns
       const { data, error } = await supabase
         .from('site_settings')
         .select('*')
@@ -69,59 +41,10 @@ class SettingsService {
         };
       }
 
+      // 2. Fetch banners from dedicated bannerService (Requirement 4)
+      const banners: HeroBanner[] = await bannerService.getBanners();
+
       if (data) {
-        let rawBanners: any[] = [];
-        if (Array.isArray(data.banners)) {
-          rawBanners = data.banners;
-        } else if (typeof data.banners === 'string') {
-          try {
-            rawBanners = JSON.parse(data.banners);
-          } catch {
-            rawBanners = [];
-          }
-        }
-
-        // If site_settings has no banners, or if a dedicated 'banners' table exists, check it
-        let normalizedBanners: HeroBanner[] = [];
-        if (rawBanners && rawBanners.length > 0) {
-          normalizedBanners = rawBanners.map((b, i) => this.normalizeBanner(b, i));
-        } else {
-          // Check dedicated banners table if exists
-          try {
-            const { data: tableBanners } = await supabase
-              .from('banners')
-              .select('*')
-              .order('order_index', { ascending: true });
-            if (tableBanners && tableBanners.length > 0) {
-              normalizedBanners = tableBanners.map((b, i) => this.normalizeBanner(b, i));
-            }
-          } catch {
-            // No standalone table
-          }
-        }
-
-        if (normalizedBanners.length === 0) {
-          normalizedBanners = DEFAULT_SITE_SETTINGS.banners.map((b, i) => this.normalizeBanner(b, i));
-        }
-
-        const articles: Article[] = Array.isArray(data.articles)
-          ? data.articles
-          : typeof data.articles === 'string'
-          ? JSON.parse(data.articles)
-          : (DEFAULT_SITE_SETTINGS.articles || []);
-
-        const knowledgeTips: KnowledgeTip[] = Array.isArray(data.knowledge_tips || data.knowledgeTips)
-          ? (data.knowledge_tips || data.knowledgeTips)
-          : typeof (data.knowledge_tips || data.knowledgeTips) === 'string'
-          ? JSON.parse(data.knowledge_tips || data.knowledgeTips)
-          : (DEFAULT_SITE_SETTINGS.knowledgeTips || []);
-
-        const customerReviews: CustomerReviewItem[] = Array.isArray(data.customer_reviews || data.customerReviews)
-          ? (data.customer_reviews || data.customerReviews)
-          : typeof (data.customer_reviews || data.customerReviews) === 'string'
-          ? JSON.parse(data.customer_reviews || data.customerReviews)
-          : (DEFAULT_SITE_SETTINGS.customerReviews || []);
-
         const merged: SiteSettings = {
           id: 'main',
           siteName: data.site_name || DEFAULT_SITE_SETTINGS.siteName,
@@ -141,17 +64,17 @@ class SettingsService {
           contactSubtitle: data.contact_subtitle || DEFAULT_SITE_SETTINGS.contactSubtitle,
           contactAddress: data.contact_address || DEFAULT_SITE_SETTINGS.contactAddress,
           contactHours: data.contact_hours || DEFAULT_SITE_SETTINGS.contactHours,
-          banners: normalizedBanners,
-          articles: articles && articles.length > 0 ? articles : (DEFAULT_SITE_SETTINGS.articles || []),
-          knowledgeTips: knowledgeTips && knowledgeTips.length > 0 ? knowledgeTips : (DEFAULT_SITE_SETTINGS.knowledgeTips || []),
-          customerReviews: customerReviews && customerReviews.length > 0 ? customerReviews : (DEFAULT_SITE_SETTINGS.customerReviews || []),
+          banners: banners.length > 0 ? banners : DEFAULT_SITE_SETTINGS.banners,
+          articles: DEFAULT_ARTICLES,
+          knowledgeTips: DEFAULT_KNOWLEDGE_TIPS,
+          customerReviews: DEFAULT_CUSTOMER_REVIEWS,
           updatedAt: data.updated_at,
         };
 
         return { settings: merged, source: 'supabase' };
       }
 
-      // If no row exists yet, bootstrap with default settings
+      // If no row exists yet, bootstrap with core default settings
       await this.saveSettings(DEFAULT_SITE_SETTINGS);
       return { settings: DEFAULT_SITE_SETTINGS, source: 'supabase' };
     } catch (err: any) {
@@ -162,7 +85,10 @@ class SettingsService {
 
   /**
    * Save / Upsert site settings to Supabase table 'site_settings'
-   * Enforces Requirement 2: Strictly forbids Base64 in Database
+   * CRITICAL REQUIREMENT 1 & 2:
+   * 1. Never send 'articles' field to site_settings (column does not exist)
+   * 2. Never send 'knowledge_tips' or 'customer_reviews'
+   * 3. Never send Base64
    */
   async saveSettings(settings: SiteSettings): Promise<{ success: boolean; message: string }> {
     if (!isSupabaseConfigured() || !supabase) {
@@ -173,18 +99,7 @@ class SettingsService {
     }
 
     try {
-      // Requirement 2: Strict check - Do NOT allow Base64 in Database
-      for (const banner of settings.banners || []) {
-        const url = banner.imageUrl || banner.image_url || '';
-        if (url.startsWith('data:') || url.includes(';base64,')) {
-          return {
-            success: false,
-            message: 'ข้อผิดพลาด: ห้ามเก็บรูปภาพเป็น Base64 ในฐานข้อมูล กรุณาอัปโหลดรูปภาพผ่านระบบเข้าสู่ Supabase Storage Bucket SITE-IMAGES ก่อนบันทึก',
-          };
-        }
-      }
-
-      // Prepare banner payload with both snake_case and camelCase for maximum compatibility
+      // Format banners safely
       const bannersPayload = (settings.banners || []).map((b, i) => ({
         id: b.id || `banner-${Date.now()}-${i}`,
         title: b.title || '',
@@ -201,6 +116,8 @@ class SettingsService {
         order_index: typeof b.order === 'number' ? b.order : i + 1,
       }));
 
+      // ONLY include columns that actually exist in 'site_settings' table!
+      // (NO articles, NO knowledge_tips, NO customer_reviews)
       const payload = {
         id: 'main',
         site_name: settings.siteName,
@@ -221,9 +138,6 @@ class SettingsService {
         contact_address: settings.contactAddress,
         contact_hours: settings.contactHours,
         banners: bannersPayload,
-        articles: settings.articles || [],
-        knowledge_tips: settings.knowledgeTips || [],
-        customer_reviews: settings.customerReviews || [],
         updated_at: new Date().toISOString(),
       };
 
@@ -231,9 +145,9 @@ class SettingsService {
         .from('site_settings')
         .upsert(payload, { onConflict: 'id' });
 
-      // Fallback: If extra columns do not exist in table yet, try core columns payload
-      if (error && (error.message.includes('column') && error.message.includes('site_settings'))) {
-        const fallbackPayload = {
+      // Core fallback if extra columns (like agent_line_url) don't exist yet
+      if (error && error.message.includes('column') && error.message.includes('site_settings')) {
+        const corePayload = {
           id: 'main',
           site_name: settings.siteName,
           site_tagline: settings.siteTagline,
@@ -249,12 +163,12 @@ class SettingsService {
           contact_address: settings.contactAddress,
           contact_hours: settings.contactHours,
           banners: bannersPayload,
-          articles: settings.articles || [],
           updated_at: new Date().toISOString(),
         };
+
         const retryRes = await supabase
           .from('site_settings')
-          .upsert(fallbackPayload, { onConflict: 'id' });
+          .upsert(corePayload, { onConflict: 'id' });
         error = retryRes.error;
       }
 
@@ -268,7 +182,7 @@ class SettingsService {
 
       return {
         success: true,
-        message: 'บันทึกข้อมูลเว็บไซต์และแบนเนอร์ลง Supabase Database สำเร็จเรียบร้อยแล้ว!',
+        message: 'บันทึกข้อมูลเว็บไซต์ลง Supabase Database สำเร็จเรียบร้อยแล้ว!',
       };
     } catch (err: any) {
       return {
@@ -279,55 +193,7 @@ class SettingsService {
   }
 
   /**
-   * Save only banners to Supabase Database immediately
-   */
-  async saveBanners(newBanners: HeroBanner[]): Promise<{ success: boolean; message: string }> {
-    const current = await this.getSettings();
-    const updated: SiteSettings = {
-      ...current.settings,
-      banners: newBanners,
-    };
-    return this.saveSettings(updated);
-  }
-
-  /**
-   * Delete a banner:
-   * 1. Remove file from Supabase Storage (SITE-IMAGES)
-   * 2. Remove record from Database
-   * Prevents orphaned image files in Storage (Requirement 4)
-   */
-  async deleteBanner(
-    bannerId: string,
-    currentBanners: HeroBanner[]
-  ): Promise<{ success: boolean; message: string; updatedBanners: HeroBanner[] }> {
-    const target = currentBanners.find((b) => b.id === bannerId);
-    const targetUrl = target?.imageUrl || target?.image_url;
-
-    // 1. Delete image file from Supabase Storage
-    if (targetUrl && storageService.isSupabaseStorageUrl(targetUrl)) {
-      await storageService.deleteImageByUrl(targetUrl).catch((err) => {
-        console.warn('[SettingsService] Failed to delete banner image from storage:', err);
-      });
-    }
-
-    // 2. Remove banner from list and reindex orders
-    const remaining = currentBanners
-      .filter((b) => b.id !== bannerId)
-      .map((b, idx) => ({ ...b, order: idx + 1, order_index: idx + 1 }));
-
-    // 3. Save updated banner list to Database
-    const res = await this.saveBanners(remaining);
-    return {
-      success: res.success,
-      message: res.success
-        ? 'ลบแบนเนอร์และลบไฟล์รูปออกจาก Supabase Storage (SITE-IMAGES) เรียบร้อยแล้ว'
-        : res.message,
-      updatedBanners: remaining,
-    };
-  }
-
-  /**
-   * Upload an image to Supabase Storage bucket 'SITE-IMAGES' with client compression
+   * Upload asset with compression
    */
   async uploadAsset(
     file: File,
