@@ -94,15 +94,19 @@ WITH CHECK (true);
 
 
 -- ==============================================================================
--- 5. ตรวจสอบและตั้งค่า Storage Bucket 'site-images' และ 'website-assets'
+-- 5. ตรวจสอบและตั้งค่า Storage Bucket 'SITE-IMAGES' (และ 'site-images', 'website-assets')
 -- ==============================================================================
 INSERT INTO storage.buckets (id, name, public)
+VALUES ('SITE-IMAGES', 'SITE-IMAGES', true)
+ON CONFLICT (id) DO UPDATE SET public = true;
+
+INSERT INTO storage.buckets (id, name, public)
 VALUES ('site-images', 'site-images', true)
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (id) DO UPDATE SET public = true;
 
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('website-assets', 'website-assets', true)
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (id) DO UPDATE SET public = true;
 
 DROP POLICY IF EXISTS "Allow public read storage" ON storage.objects;
 DROP POLICY IF EXISTS "Allow authenticated upload storage" ON storage.objects;
@@ -111,23 +115,61 @@ DROP POLICY IF EXISTS "Allow authenticated delete storage" ON storage.objects;
 DROP POLICY IF EXISTS "Public Access website-assets" ON storage.objects;
 DROP POLICY IF EXISTS "Public Upload website-assets" ON storage.objects;
 
--- 5.1 ผู้เข้าชมทุกคน: ดูรูปภาพใน Bucket 'site-images' และ 'website-assets' ได้ (Public View)
+-- 5.1 ผู้เข้าชมทุกคน: ดูรูปภาพใน Bucket 'SITE-IMAGES', 'site-images' และ 'website-assets' ได้ (Public Read)
 CREATE POLICY "Allow public read storage"
 ON storage.objects FOR SELECT
-USING (bucket_id IN ('site-images', 'website-assets'));
+USING (bucket_id IN ('SITE-IMAGES', 'site-images', 'website-assets'));
 
--- 5.2 บัญชี Admin ที่ Login เท่านั้น: อัปโหลด แก้ไข หรือลบรูปภาพได้
+-- 5.2 บัญชี Admin ที่ Login: อัปโหลดรูปภาพใหม่ได้ (Upload)
 CREATE POLICY "Allow authenticated upload storage"
 ON storage.objects FOR INSERT
 TO authenticated
-WITH CHECK (bucket_id IN ('site-images', 'website-assets'));
+WITH CHECK (bucket_id IN ('SITE-IMAGES', 'site-images', 'website-assets'));
 
+-- 5.3 บัญชี Admin ที่ Login: เปลี่ยนหรืออัปเดตไฟล์รูปภาพได้ (Update)
 CREATE POLICY "Allow authenticated update storage"
 ON storage.objects FOR UPDATE
 TO authenticated
-USING (bucket_id IN ('site-images', 'website-assets'));
+USING (bucket_id IN ('SITE-IMAGES', 'site-images', 'website-assets'))
+WITH CHECK (bucket_id IN ('SITE-IMAGES', 'site-images', 'website-assets'));
 
+-- 5.4 บัญชี Admin ที่ Login: ลบรูปภาพออกจาก Storage ได้เพื่อป้องกันไฟล์ขยะสะสม (Delete)
 CREATE POLICY "Allow authenticated delete storage"
 ON storage.objects FOR DELETE
 TO authenticated
-USING (bucket_id IN ('site-images', 'website-assets'));
+USING (bucket_id IN ('SITE-IMAGES', 'site-images', 'website-assets'));
+
+-- ==============================================================================
+-- 6. ตาราง public.banners (ถ้าต้องการจัดเก็บแยกตารางควบคู่กับ site_settings)
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.banners (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  subtitle TEXT DEFAULT '',
+  image_url TEXT NOT NULL,
+  button_text TEXT DEFAULT 'ดูรายละเอียด',
+  button_link TEXT DEFAULT '#products',
+  order_index INTEGER DEFAULT 1,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.banners ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Allow public read banners" ON public.banners;
+DROP POLICY IF EXISTS "Allow authenticated insert banners" ON public.banners;
+DROP POLICY IF EXISTS "Allow authenticated update banners" ON public.banners;
+DROP POLICY IF EXISTS "Allow authenticated delete banners" ON public.banners;
+
+CREATE POLICY "Allow public read banners"
+ON public.banners FOR SELECT USING (true);
+
+CREATE POLICY "Allow authenticated insert banners"
+ON public.banners FOR INSERT TO authenticated WITH CHECK (true);
+
+CREATE POLICY "Allow authenticated update banners"
+ON public.banners FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
+
+CREATE POLICY "Allow authenticated delete banners"
+ON public.banners FOR DELETE TO authenticated USING (true);

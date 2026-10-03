@@ -25,7 +25,11 @@ export const Hero: React.FC<HeroProps> = ({
   onContactClick,
   siteSettings,
 }) => {
-  const banners = siteSettings?.banners?.filter((b) => b.isActive) || [];
+  // Extract active banners, sorted by order index
+  const banners = (siteSettings?.banners || [])
+    .filter((b) => (b.isActive !== undefined ? b.isActive : b.is_active !== false))
+    .sort((a, b) => (a.order || 0) - (b.order || 0));
+
   const hasMultipleBanners = banners.length > 1;
   const [currentSlide, setCurrentSlide] = useState(0);
 
@@ -39,7 +43,17 @@ export const Hero: React.FC<HeroProps> = ({
   }, [hasMultipleBanners, banners.length]);
 
   const activeBanner = banners[currentSlide] || banners[0];
-  const heroImage = activeBanner?.imageUrl || heroImgFallback;
+  
+  // Extract banner image from Supabase Storage or fallback (strictly exclude Unsplash)
+  const getBannerImageUrl = () => {
+    const rawUrl = activeBanner?.image_url || activeBanner?.imageUrl;
+    if (!rawUrl || rawUrl.includes('unsplash.com')) {
+      return heroImgFallback;
+    }
+    return rawUrl;
+  };
+
+  const heroImage = getBannerImageUrl();
 
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % banners.length);
