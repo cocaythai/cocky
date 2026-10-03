@@ -3,12 +3,16 @@
 -- หมายเหตุ: สคริปต์นี้ปลอดภัย 100% ไม่ลบตาราง และไม่ลบข้อมูลสินค้าเดิมของคุณ
 -- ==============================================================================
 
--- 1. เพิ่มคอลัมน์ส่วนเสริมในตาราง site_settings (ถ้ายังไม่มี)
+-- 1. เพิ่มคอลัมน์ส่วนเสริมในตาราง site_settings และ products (ถ้ายังไม่มี)
 ALTER TABLE public.site_settings 
 ADD COLUMN IF NOT EXISTS logo_url TEXT DEFAULT '',
 ADD COLUMN IF NOT EXISTS agent_line_url TEXT DEFAULT '',
 ADD COLUMN IF NOT EXISTS facebook_url TEXT DEFAULT '',
 ADD COLUMN IF NOT EXISTS facebook_name TEXT DEFAULT '';
+
+-- เพิ่มคอลัมน์ images สำหรับเก็บรูปภาพสูงสุด 5 รูปต่อสินค้า (ไม่กระทบรูปเดิม)
+ALTER TABLE public.products
+ADD COLUMN IF NOT EXISTS images TEXT[] DEFAULT '{}';
 
 -- 2. ลบข้อมูลทดสอบความปลอดภัยออกจากตาราง products (ถ้ามี)
 DELETE FROM public.products WHERE name = 'Hacker Product';
@@ -90,8 +94,12 @@ WITH CHECK (true);
 
 
 -- ==============================================================================
--- 5. ตรวจสอบและตั้งค่า Storage Bucket 'website-assets'
+-- 5. ตรวจสอบและตั้งค่า Storage Bucket 'site-images' และ 'website-assets'
 -- ==============================================================================
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('site-images', 'site-images', true)
+ON CONFLICT (id) DO NOTHING;
+
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('website-assets', 'website-assets', true)
 ON CONFLICT (id) DO NOTHING;
@@ -103,23 +111,23 @@ DROP POLICY IF EXISTS "Allow authenticated delete storage" ON storage.objects;
 DROP POLICY IF EXISTS "Public Access website-assets" ON storage.objects;
 DROP POLICY IF EXISTS "Public Upload website-assets" ON storage.objects;
 
--- 5.1 ผู้เข้าชมทุกคน: ดูรูปภาพใน Bucket 'website-assets' ได้ (Public View)
+-- 5.1 ผู้เข้าชมทุกคน: ดูรูปภาพใน Bucket 'site-images' และ 'website-assets' ได้ (Public View)
 CREATE POLICY "Allow public read storage"
 ON storage.objects FOR SELECT
-USING (bucket_id = 'website-assets');
+USING (bucket_id IN ('site-images', 'website-assets'));
 
 -- 5.2 บัญชี Admin ที่ Login เท่านั้น: อัปโหลด แก้ไข หรือลบรูปภาพได้
 CREATE POLICY "Allow authenticated upload storage"
 ON storage.objects FOR INSERT
 TO authenticated
-WITH CHECK (bucket_id = 'website-assets');
+WITH CHECK (bucket_id IN ('site-images', 'website-assets'));
 
 CREATE POLICY "Allow authenticated update storage"
 ON storage.objects FOR UPDATE
 TO authenticated
-USING (bucket_id = 'website-assets');
+USING (bucket_id IN ('site-images', 'website-assets'));
 
 CREATE POLICY "Allow authenticated delete storage"
 ON storage.objects FOR DELETE
 TO authenticated
-USING (bucket_id = 'website-assets');
+USING (bucket_id IN ('site-images', 'website-assets'));

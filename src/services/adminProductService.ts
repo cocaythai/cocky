@@ -6,6 +6,7 @@ export interface AdminProductPayload {
   name: string;
   price: number;
   image_url: string;
+  images?: string[]; // Up to 5 product images
   description?: string;
   category?: string;
 }
@@ -20,19 +21,37 @@ class AdminProductService {
     }
 
     try {
-      const { data, error } = await supabase
+      const sanitizedImages = (payload.images || [payload.image_url]).slice(0, 5);
+      const mainImageUrl = sanitizedImages[0] || payload.image_url;
+
+      // 1. Attempt insert with images array
+      let insertData: any = {
+        name: payload.name,
+        price: Number(payload.price) || 0,
+        image_url: mainImageUrl,
+        images: sanitizedImages,
+        description: payload.description || '',
+        category: payload.category || 'water',
+      };
+
+      let { data, error } = await supabase
         .from('products')
-        .insert([
-          {
-            name: payload.name,
-            price: Number(payload.price) || 0,
-            image_url: payload.image_url,
-            description: payload.description || '',
-            category: payload.category || 'water',
-          },
-        ])
+        .insert([insertData])
         .select()
         .single();
+
+      // If 'images' column doesn't exist yet in Supabase table, retry without 'images' column
+      if (error && (error.message.includes('images') || error.code === '42703')) {
+        console.warn('[AdminProductService] Column "images" not found, falling back to image_url only:', error.message);
+        delete insertData.images;
+        const retryResult = await supabase
+          .from('products')
+          .insert([insertData])
+          .select()
+          .single();
+        data = retryResult.data;
+        error = retryResult.error;
+      }
 
       if (error) {
         return { success: false, message: `เพิ่มสินค้าไม่สำเร็จ: ${error.message}` };
@@ -50,32 +69,60 @@ class AdminProductService {
   async updateProduct(
     id: string | number,
     payload: Partial<AdminProductPayload>,
-    oldImageUrl?: string
+    oldImages?: string[] | string
   ): Promise<{ success: boolean; message: string }> {
     if (!isSupabaseConfigured() || !supabase) {
       return { success: false, message: 'Supabase is not configured' };
     }
 
     try {
-      const { error } = await supabase
+      const sanitizedImages = payload.images ? payload.images.slice(0, 5) : undefined;
+      const mainImageUrl = sanitizedImages?.[0] || payload.image_url;
+
+      let updateData: any = {
+        name: payload.name,
+        price: Number(payload.price) || 0,
+        image_url: mainImageUrl,
+        description: payload.description,
+        category: payload.category,
+      };
+
+      if (sanitizedImages) {
+        updateData.images = sanitizedImages;
+      }
+
+      let { error } = await supabase
         .from('products')
-        .update({
-          name: payload.name,
-          price: Number(payload.price) || 0,
-          image_url: payload.image_url,
-          description: payload.description,
-          category: payload.category,
-        })
+        .update(updateData)
         .eq('id', id);
+
+      // If 'images' column doesn't exist yet, retry without 'images' column
+      if (error && (error.message.includes('images') || error.code === '42703')) {
+        console.warn('[AdminProductService] Column "images" not found during update, falling back to image_url only:', error.message);
+        delete updateData.images;
+        const retryResult = await supabase
+          .from('products')
+          .update(updateData)
+          .eq('id', id);
+        error = retryResult.error;
+      }
 
       if (error) {
         return { success: false, message: `อัปเดตไม่สำเร็จ: ${error.message}` };
       }
 
-      // If image changed and previous image was stored in Supabase Storage, delete old image
-      if (oldImageUrl && payload.image_url && oldImageUrl !== payload.image_url) {
-        storageService.deleteImageByUrl(oldImageUrl).catch((err) => {
-          console.warn('[AdminProductService] Failed to clean up old product image:', err);
+      // Clean up removed images from Supabase Storage so no orphaned files accumulate
+      const oldList: string[] = Array.isArray(oldImages)
+        ? oldImages
+        : oldImages
+        ? [oldImages]
+        : [];
+      const currentList: string[] = sanitizedImages || (mainImageUrl ? [mainImageUrl] : []);
+
+      const removedUrls = oldList.filter((url) => url && !currentList.includes(url));
+      if (removedUrls.length > 0) {
+        storageService.deleteMultipleImagesByUrl(removedUrls).catch((err) => {
+          console.warn('[AdminProductService] Failed to clean up removed images from storage:', err);
         });
       }
 
@@ -86,9 +133,9 @@ class AdminProductService {
   }
 
   /**
-   * Delete product from Supabase table 'products' and clean up image from storage
+   * Delete product from Supabase table 'products' and clean up all its images from storage
    */
-  async deleteProduct(id: string | number, imageUrl?: string): Promise<{ success: boolean; message: string }> {
+  async deleteProduct(id: string | number, imagesOrUrl?: string[] | string): Promise<{ success: boolean; message: string }> {
     if (!isSupabaseConfigured() || !supabase) {
       return { success: false, message: 'Supabase is not configured' };
     }
@@ -103,10 +150,16 @@ class AdminProductService {
         return { success: false, message: `ลบสินค้าไม่สำเร็จ: ${error.message}` };
       }
 
-      // Clean up image file from Supabase storage if applicable
-      if (imageUrl) {
-        storageService.deleteImageByUrl(imageUrl).catch((err) => {
-          console.warn('[AdminProductService] Failed to clean up deleted product image:', err);
+      // Clean up all images from Supabase storage if applicable
+      const toDelete: string[] = Array.isArray(imagesOrUrl)
+        ? imagesOrUrl
+        : imagesOrUrl
+        ? [imagesOrUrl]
+        : [];
+
+      if (toDelete.length > 0) {
+        storageService.deleteMultipleImagesByUrl(toDelete).catch((err) => {
+          console.warn('[AdminProductService] Failed to clean up deleted product images:', err);
         });
       }
 

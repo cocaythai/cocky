@@ -16,6 +16,8 @@ import {
   Calendar,
   Layers,
   Zap,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 interface ProductDetailModalProps {
@@ -38,6 +40,19 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     product.subscriptionOptions[0]
   );
   const [copied, setCopied] = useState(false);
+  const [activeImageIdx, setActiveImageIdx] = useState(0);
+
+  // Get list of up to 5 images, fallback to single product.image
+  const allImages = (product.images && product.images.length > 0)
+    ? product.images.slice(0, 5)
+    : (product.image ? [product.image] : []);
+
+  // Reset active image index whenever opened product changes
+  React.useEffect(() => {
+    setActiveImageIdx(0);
+  }, [product?.id]);
+
+  const activeImage = allImages[activeImageIdx] || product.image;
 
   const handleShare = () => {
     navigator.clipboard?.writeText(window.location.href);
@@ -88,23 +103,83 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         <div className="overflow-y-auto p-6 sm:p-8 space-y-8">
           {/* Top Two Column Layout: Image + Buying Box */}
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
-            {/* Left: Big Product Image */}
-            <div className="md:col-span-6 bg-slate-50 rounded-2xl p-6 flex flex-col items-center justify-center border border-slate-100 relative">
-              <img
-                src={product.image}
-                alt={product.name}
-                referrerPolicy="no-referrer"
-                className="w-full max-h-[340px] object-contain drop-shadow-md"
-                decoding="async"
-                onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).src =
-                    'https://images.unsplash.com/photo-1548839140-29a749e1bc4e?auto=format&fit=crop&w=600&q=80';
-                }}
-              />
+            {/* Left: Product Image Gallery */}
+            <div className="md:col-span-6 bg-slate-50 rounded-2xl p-4 sm:p-6 flex flex-col items-center justify-center border border-slate-100 relative group">
+              {/* Main Image Viewport */}
+              <div className="relative w-full aspect-square sm:max-h-[340px] flex items-center justify-center overflow-hidden">
+                <img
+                  src={activeImage}
+                  alt={`${product.name} รูปที่ ${activeImageIdx + 1}`}
+                  referrerPolicy="no-referrer"
+                  className="w-full h-full object-contain drop-shadow-md transition-all duration-300"
+                  decoding="async"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src =
+                      'https://images.unsplash.com/photo-1548839140-29a749e1bc4e?auto=format&fit=crop&w=600&q=80';
+                  }}
+                />
+
+                {/* Left/Right Arrow Navigation (Only when > 1 image) */}
+                {allImages.length > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setActiveImageIdx((prev) => (prev > 0 ? prev - 1 : allImages.length - 1))}
+                      aria-label="รูปก่อนหน้า"
+                      className="absolute left-1 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 hover:bg-white text-slate-700 shadow-md flex items-center justify-center transition-all hover:scale-110 cursor-pointer focus:outline-hidden"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveImageIdx((prev) => (prev < allImages.length - 1 ? prev + 1 : 0))}
+                      aria-label="รูปถัดไป"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 hover:bg-white text-slate-700 shadow-md flex items-center justify-center transition-all hover:scale-110 cursor-pointer focus:outline-hidden"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+
+                    {/* Counter Badge */}
+                    <div className="absolute top-2 right-2 bg-slate-900/70 backdrop-blur-xs text-white text-[11px] font-semibold px-2.5 py-0.5 rounded-full font-mono">
+                      {activeImageIdx + 1} / {allImages.length}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Thumbnails Strip (Only when > 1 image) */}
+              {allImages.length > 1 && (
+                <div className="mt-3.5 w-full flex items-center justify-center gap-2 overflow-x-auto py-1">
+                  {allImages.map((imgUrl, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setActiveImageIdx(idx)}
+                      className={`relative w-12 h-12 sm:w-14 sm:h-14 rounded-xl overflow-hidden p-1 bg-white border-2 transition-all cursor-pointer shrink-0 ${
+                        activeImageIdx === idx
+                          ? 'border-sky-500 ring-2 ring-sky-300 shadow-xs scale-105'
+                          : 'border-slate-200 hover:border-slate-300 opacity-70 hover:opacity-100'
+                      }`}
+                      title={`ดูรูปที่ ${idx + 1}`}
+                    >
+                      <img
+                        src={imgUrl}
+                        alt={`ภาพย่อ ${idx + 1}`}
+                        className="w-full h-full object-contain"
+                      />
+                      {idx === 0 && (
+                        <span className="absolute bottom-0 inset-x-0 bg-sky-600/90 text-[8px] text-white text-center font-bold py-0.2 leading-tight">
+                          รูปหลัก
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
 
               {/* Water Types Tag Pills */}
               {product.waterTypes && (
-                <div className="mt-4 flex flex-wrap justify-center gap-2 text-xs font-medium">
+                <div className="mt-3 flex flex-wrap justify-center gap-2 text-xs font-medium">
                   {product.waterTypes.includes('hot') && (
                     <span className="inline-flex items-center gap-1 text-rose-700 bg-rose-50 px-2.5 py-1 rounded-md border border-rose-100">
                       <Flame className="w-3.5 h-3.5 text-rose-500" /> น้ำร้อน

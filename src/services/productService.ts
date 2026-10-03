@@ -19,7 +19,29 @@ export interface DataFetchResult {
  */
 function mapSupabaseRowToProduct(row: any, index: number): CowayProduct {
   const numericPrice = Number(row.price) || 790;
-  const image = row.image_url || row.image || (index % 2 === 0 ? defaultFallbackImg : myIceFallbackImg);
+  
+  // Extract up to 5 images from row.images (array or json string), fallback to image_url / image
+  let imagesList: string[] = [];
+  if (Array.isArray(row.images) && row.images.length > 0) {
+    imagesList = row.images.filter((img: any) => typeof img === 'string' && img.trim().length > 0).slice(0, 5);
+  } else if (typeof row.images === 'string' && row.images.trim()) {
+    try {
+      const parsed = JSON.parse(row.images);
+      if (Array.isArray(parsed)) {
+        imagesList = parsed.filter((img: any) => typeof img === 'string' && img.trim().length > 0).slice(0, 5);
+      }
+    } catch {
+      imagesList = [row.images.trim()];
+    }
+  }
+
+  const defaultImg = index % 2 === 0 ? defaultFallbackImg : myIceFallbackImg;
+  const primaryImage = imagesList[0] || row.image_url || row.image || defaultImg;
+
+  if (imagesList.length === 0 && primaryImage) {
+    imagesList = [primaryImage];
+  }
+
   const name = row.name || `Coway Product ${index + 1}`;
   const id = String(row.id || `sp-${index + 1}`);
 
@@ -28,7 +50,8 @@ function mapSupabaseRowToProduct(row: any, index: number): CowayProduct {
     name,
     description: row.description || `${name} ผลิตภัณฑ์คุณภาพจาก Coway เพื่อสุขภาพและสุขอนามัยที่ดีของทุกคนในบ้าน`,
     price: numericPrice,
-    image,
+    image: primaryImage,
+    images: imagesList.length > 0 ? imagesList : [primaryImage],
     category: (row.category as any) || 'water',
     features: Array.isArray(row.features)
       ? row.features

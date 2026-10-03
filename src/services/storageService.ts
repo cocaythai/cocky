@@ -152,6 +152,41 @@ class StorageService {
   }
 
   /**
+   * Upload multiple images sequentially or in parallel
+   */
+  async uploadMultipleImages(
+    files: File[],
+    folder: 'banners' | 'articles' | 'knowledge' | 'reviews' | 'products' | 'logo' = 'products',
+    onProgress?: (completed: number, total: number) => void
+  ): Promise<UploadResult[]> {
+    const results: UploadResult[] = [];
+    let completed = 0;
+    for (const file of files) {
+      const res = await this.uploadImage(file, folder);
+      results.push(res);
+      completed++;
+      if (onProgress) {
+        onProgress(completed, files.length);
+      }
+    }
+    return results;
+  }
+
+  /**
+   * Delete multiple images by their URLs
+   */
+  async deleteMultipleImagesByUrl(urls: string[]): Promise<number> {
+    let deletedCount = 0;
+    for (const url of urls) {
+      if (this.isSupabaseStorageUrl(url)) {
+        const ok = await this.deleteImageByUrl(url);
+        if (ok) deletedCount++;
+      }
+    }
+    return deletedCount;
+  }
+
+  /**
    * Check if a URL points to our Supabase Storage bucket
    */
   isSupabaseStorageUrl(url?: string): boolean {

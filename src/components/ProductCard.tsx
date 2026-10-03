@@ -38,7 +38,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       {/* Top Image Canvas */}
       <div className="relative aspect-4/3 bg-slate-50 flex items-center justify-center p-4 overflow-hidden border-b border-slate-100">
         <img
-          src={product.image}
+          src={product.images?.[0] || product.image}
           alt={product.name}
           referrerPolicy="no-referrer"
           className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
@@ -49,6 +49,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               'https://images.unsplash.com/photo-1548839140-29a749e1bc4e?auto=format&fit=crop&w=600&q=80';
           }}
         />
+
+        {/* Multiple Images Indicator Badge */}
+        {product.images && product.images.length > 1 && (
+          <div className="absolute bottom-3 right-3 bg-slate-900/75 backdrop-blur-xs text-white text-[10px] font-semibold px-2 py-0.5 rounded-md flex items-center gap-1 shadow-xs pointer-events-none">
+            <span>📷 {product.images.length} รูป</span>
+          </div>
+        )}
 
         {/* Quiet Top Meta Badges (zero-pill: text based clean strip) */}
         <div className="absolute top-3 left-3 flex flex-col gap-1 items-start">

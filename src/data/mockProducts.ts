@@ -18,6 +18,7 @@ export const MOCK_PRODUCTS: CowayProduct[] = [
     description: 'Coway Neo Plus คือเครื่องกรองน้ำระบบ RO ยอดนิยมอันดับ 1 ในไทยที่ตอบโจทย์ครอบครัวยุคใหม่ 3-5 คน ด้วยถังเก็บน้ำขนาด 5.8 ลิตร สามารถปรับเลือกน้ำได้ 3 อุณหภูมิ (น้ำร้อน น้ำเย็น และน้ำอุณหภูมิห้อง) พร้อมโหมดประหยัดพลังงาน Eco Mode ในเวลากลางคืน และฟังก์ชันล็อกน้ำร้อนป้องกันเด็กกดน้ำเล่น',
     price: 790,
     image: imgNeoPlus,
+    images: [imgNeoPlus, imgMyIce, imgAirNoble],
     category: 'water',
     features: [
       '3 อุณหภูมิน้ำ: น้ำร้อน, น้ำเย็น, น้ำอุณหภูมิห้อง',

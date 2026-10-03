@@ -26,7 +26,8 @@ export interface CowayProduct {
   name: string;
   description: string;
   price: number; // Starting monthly subscription price (THB/month)
-  image: string;
+  image: string; // Primary/Main Image (corresponds to images[0])
+  images?: string[]; // Up to 5 product images (index 0 is main image)
   category: ProductCategoryType;
   features: string[];
   isActive: boolean; // Controls whether product is published/visible

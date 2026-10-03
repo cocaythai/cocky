@@ -50,6 +50,9 @@ import {
   Clock,
   Lightbulb,
   MessageSquareQuote,
+  ChevronLeft,
+  ChevronRight,
+  Star,
 } from 'lucide-react';
 
 export type AdminMenuTab = 'dashboard' | 'products' | 'banners' | 'articles' | 'knowledge' | 'reviews' | 'contact' | 'settings';
@@ -104,6 +107,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
     name: '',
     price: 790,
     imageUrl: '',
+    images: [] as string[], // Up to 5 product images
     description: '',
     category: 'water',
   });
@@ -111,7 +115,9 @@ export const AdminModal: React.FC<AdminModalProps> = ({
   const [productCategoryFilter, setProductCategoryFilter] = useState('all');
   const [isProductSubmitting, setIsProductSubmitting] = useState(false);
   const [productImageUploading, setProductImageUploading] = useState(false);
+  const [productImageUploadProgress, setProductImageUploadProgress] = useState<string | null>(null);
   const [productImageStats, setProductImageStats] = useState<string | null>(null);
+  const [inputImageUrl, setInputImageUrl] = useState('');
   const [logoUploading, setLogoUploading] = useState(false);
 
   // Article Management State
@@ -280,12 +286,149 @@ export const AdminModal: React.FC<AdminModalProps> = ({
   };
 
   // ==========================================
-  // 3. PRODUCT ACTIONS
+  // 3. PRODUCT ACTIONS & MULTI-IMAGE MANAGEMENT (Max 5 images)
   // ==========================================
+  const handleProductFilesUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files ? Array.from(e.target.files) : [];
+    if (files.length === 0) return;
+
+    const currentCount = productForm.images.length;
+    if (currentCount >= 5) {
+      showToast('error', '⚠️ สินค้า 1 รายการสามารถเพิ่มรูปภาพได้สูงสุด 5 รูปเท่านั้น กรุณาลบรูปที่ไม่ต้องการออกก่อนเพิ่มใหม่');
+      e.target.value = '';
+      return;
+    }
+
+    const availableSlots = 5 - currentCount;
+    if (files.length > availableSlots) {
+      showToast('error', `⚠️ จำกัดสูงสุด 5 รูปต่อสินค้า! คุณเลือกมา ${files.length} รูป แต่เหลือโควตาเพียง ${availableSlots} รูป (ระบบจะอัปโหลดเฉพาะ ${availableSlots} รูปแรก)`);
+    }
+
+    const filesToUpload = files.slice(0, availableSlots);
+    setProductImageUploading(true);
+    setProductImageUploadProgress(`กำลังอัปโหลด 0/${filesToUpload.length} รูป...`);
+
+    try {
+      const results = await storageService.uploadMultipleImages(
+        filesToUpload,
+        'products',
+        (completed, total) => {
+          setProductImageUploadProgress(`กำลังอัปโหลด ${completed}/${total} รูป...`);
+        }
+      );
+
+      const successfulUrls: string[] = [];
+      let compressedInfo = '';
+      for (const res of results) {
+        if (res.success && res.url) {
+          successfulUrls.push(res.url);
+          if (res.originalSize && res.compressedSize) {
+            compressedInfo = `บีบอัดรูปภาพเฉลี่ยจาก ${formatBytes(res.originalSize)} เหลือ ${formatBytes(res.compressedSize)}`;
+          }
+        }
+      }
+
+      if (successfulUrls.length > 0) {
+        setProductForm((prev) => {
+          const combined = [...prev.images, ...successfulUrls].slice(0, 5);
+          return {
+            ...prev,
+            images: combined,
+            imageUrl: combined[0] || '',
+          };
+        });
+        setProductImageStats(compressedInfo || `อัปโหลด ${successfulUrls.length} รูปภาพสำเร็จ`);
+        showToast('success', `อัปโหลดรูปภาพสินค้าเข้า Supabase Storage สำเร็จ ${successfulUrls.length} รูป (รูปแรกกำหนดเป็นรูปหลักอัตโนมัติ)`);
+      } else {
+        showToast('error', 'อัปโหลดรูปภาพไม่สำเร็จ กรุณาตรวจสอบสิทธิ์และการเชื่อมต่อ Supabase Storage');
+      }
+    } catch (err: any) {
+      showToast('error', err.message || 'เกิดข้อผิดพลาดในการอัปโหลดรูปภาพ');
+    } finally {
+      setProductImageUploading(false);
+      setProductImageUploadProgress(null);
+      e.target.value = '';
+    }
+  };
+
+  const handleAddImageUrl = () => {
+    const url = inputImageUrl.trim();
+    if (!url) return;
+    if (productForm.images.length >= 5) {
+      showToast('error', '⚠️ สินค้า 1 รายการสามารถเพิ่มรูปภาพได้สูงสุด 5 รูปเท่านั้น');
+      return;
+    }
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      showToast('error', 'กรุณาระบุ URL รูปภาพที่ถูกต้อง (ขึ้นต้นด้วย https:// หรือ http://)');
+      return;
+    }
+
+    setProductForm((prev) => {
+      const updated = [...prev.images, url].slice(0, 5);
+      return {
+        ...prev,
+        images: updated,
+        imageUrl: updated[0] || '',
+      };
+    });
+    setInputImageUrl('');
+    showToast('success', 'เพิ่ม URL รูปภาพเรียบร้อยแล้ว (สามารถจัดลำดับหรือตั้งเป็นรูปหลักได้)');
+  };
+
+  const handleMoveProductImage = (index: number, direction: 'left' | 'right') => {
+    const newImages = [...productForm.images];
+    const targetIdx = direction === 'left' ? index - 1 : index + 1;
+    if (targetIdx < 0 || targetIdx >= newImages.length) return;
+
+    const temp = newImages[index];
+    newImages[index] = newImages[targetIdx];
+    newImages[targetIdx] = temp;
+
+    setProductForm((prev) => ({
+      ...prev,
+      images: newImages,
+      imageUrl: newImages[0] || '',
+    }));
+  };
+
+  const handleSetMainProductImage = (index: number) => {
+    if (index === 0) return;
+    const newImages = [...productForm.images];
+    const [selected] = newImages.splice(index, 1);
+    newImages.unshift(selected);
+
+    setProductForm((prev) => ({
+      ...prev,
+      images: newImages,
+      imageUrl: newImages[0] || '',
+    }));
+    showToast('success', 'กำหนดเป็นรูปหลัก (Main Image) เรียบร้อยแล้ว');
+  };
+
+  const handleDeleteProductImage = (index: number) => {
+    const newImages = productForm.images.filter((_, idx) => idx !== index);
+
+    setProductForm((prev) => ({
+      ...prev,
+      images: newImages,
+      imageUrl: newImages[0] || '',
+    }));
+    showToast('success', 'ลบรูปภาพออกจากสินค้าแล้ว (หากกดบันทึก ระบบจะลบไฟล์ที่ไม่ได้ใช้ออกจาก Storage อัตโนมัติ)');
+  };
+
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!productForm.name || !productForm.imageUrl) {
-      showToast('error', 'กรุณากรอกชื่อสินค้าและรูปภาพ');
+    if (!productForm.name) {
+      showToast('error', 'กรุณากรอกชื่อสินค้า');
+      return;
+    }
+
+    const currentImages = productForm.images.length > 0
+      ? productForm.images.slice(0, 5)
+      : (productForm.imageUrl ? [productForm.imageUrl] : []);
+
+    if (currentImages.length === 0) {
+      showToast('error', 'กรุณาใส่รูปสินค้าอย่างน้อย 1 รูป (สูงสุด 5 รูป)');
       return;
     }
 
@@ -293,16 +436,21 @@ export const AdminModal: React.FC<AdminModalProps> = ({
     try {
       if (editingProductId) {
         const oldProduct = products.find((p) => p.id === editingProductId);
+        const oldImages = oldProduct?.images && oldProduct.images.length > 0
+          ? oldProduct.images
+          : (oldProduct?.image ? [oldProduct.image] : []);
+
         const res = await adminProductService.updateProduct(
           editingProductId,
           {
             name: productForm.name,
             price: Number(productForm.price),
-            image_url: productForm.imageUrl,
+            image_url: currentImages[0],
+            images: currentImages,
             description: productForm.description,
             category: productForm.category,
           },
-          oldProduct?.image
+          oldImages
         );
         if (res.success) {
           showToast('success', res.message);
@@ -316,14 +464,15 @@ export const AdminModal: React.FC<AdminModalProps> = ({
         const res = await adminProductService.createProduct({
           name: productForm.name,
           price: Number(productForm.price),
-          image_url: productForm.imageUrl,
+          image_url: currentImages[0],
+          images: currentImages,
           description: productForm.description,
           category: productForm.category,
         });
         if (res.success) {
           showToast('success', res.message);
           setIsAddingProduct(false);
-          setProductForm({ name: '', price: 790, imageUrl: '', description: '', category: 'water' });
+          setProductForm({ name: '', price: 790, imageUrl: '', images: [], description: '', category: 'water' });
           onRefreshProducts();
         } else {
           showToast('error', res.message);
@@ -342,7 +491,11 @@ export const AdminModal: React.FC<AdminModalProps> = ({
     }
     try {
       const target = products.find((p) => p.id === id);
-      const res = await adminProductService.deleteProduct(id, target?.image);
+      const targetImages = target?.images && target.images.length > 0
+        ? target.images
+        : (target?.image ? [target.image] : []);
+
+      const res = await adminProductService.deleteProduct(id, targetImages);
       if (res.success) {
         showToast('success', res.message);
         onRefreshProducts();
@@ -917,7 +1070,8 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                   onClick={() => {
                     setIsAddingProduct(true);
                     setEditingProductId(null);
-                    setProductForm({ name: '', price: 790, imageUrl: '', description: '', category: 'water' });
+                    setProductForm({ name: '', price: 790, imageUrl: '', images: [], description: '', category: 'water' });
+                    setInputImageUrl('');
                     setProductImageStats(null);
                   }}
                   className="px-4 py-2.5 bg-slate-900 hover:bg-sky-600 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shrink-0 shadow-md"
@@ -1010,77 +1164,201 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                       </select>
                     </div>
 
-                    <div>
-                      <label className="block font-semibold text-slate-700 mb-1">
-                        รูปภาพสินค้า (อัปโหลด หรือ URL) *
-                      </label>
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          required
-                          value={productForm.imageUrl}
-                          onChange={(e) => setProductForm({ ...productForm, imageUrl: e.target.value })}
-                          placeholder="https://... หรือกดอัปโหลดรูป"
-                          className="flex-1 px-3 py-2 bg-white rounded-xl border border-slate-200 focus:outline-sky-500 text-xs"
-                        />
-                        <label className="px-3 py-2 bg-slate-900 hover:bg-sky-600 text-white font-semibold rounded-xl flex items-center gap-1.5 cursor-pointer shrink-0 transition-colors text-xs">
+                    <div className="sm:col-span-2 space-y-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                        <div>
+                          <label className="block font-semibold text-slate-900 text-xs">
+                            รูปภาพสินค้า (สูงสุด 5 รูป) <span className="text-rose-500">*</span>
+                          </label>
+                          <span className="text-[11px] text-slate-500 block">
+                            รูปแรก (ตำแหน่ง 1) จะถูกใช้เป็น <strong className="text-sky-600 font-bold">รูปหลัก (Main Image)</strong> บนหน้าเว็บไซต์ สามารถคลิกเพื่อสลับตำแหน่งหรือลบรูปได้
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs font-bold px-2.5 py-1 rounded-lg border ${
+                            productForm.images.length >= 5
+                              ? 'bg-amber-50 text-amber-700 border-amber-200'
+                              : 'bg-sky-50 text-sky-700 border-sky-200'
+                          }`}>
+                            {productForm.images.length}/5 รูป
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Upload & Add URL Toolbar */}
+                      <div className="flex flex-col sm:flex-row gap-2 bg-white p-3 rounded-2xl border border-slate-200">
+                        {/* Multiple File Upload Button */}
+                        <label className={`px-4 py-2.5 rounded-xl font-semibold flex items-center justify-center gap-2 cursor-pointer transition-all text-xs shrink-0 ${
+                          productForm.images.length >= 5
+                            ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
+                            : 'bg-slate-900 hover:bg-sky-600 text-white shadow-xs'
+                        }`}>
                           {productImageUploading ? (
                             <>
-                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                              <span>กำลังอัปโหลด...</span>
+                              <Loader2 className="w-4 h-4 animate-spin text-sky-400" />
+                              <span>{productImageUploadProgress || 'กำลังอัปโหลด...'}</span>
                             </>
                           ) : (
                             <>
-                              <Upload className="w-3.5 h-3.5" />
-                              <span>เลือกรูป</span>
+                              <Upload className="w-4 h-4" />
+                              <span>
+                                {productForm.images.length >= 5 ? 'ครบโควตา 5 รูปแล้ว' : 'อัปโหลดรูป (เลือกหลายรูปพร้อมกันได้)'}
+                              </span>
                             </>
                           )}
                           <input
                             type="file"
                             accept="image/*"
-                            disabled={productImageUploading}
-                            onChange={async (e) => {
-                              const file = e.target.files?.[0];
-                              if (!file) return;
-                              setProductImageUploading(true);
-                              try {
-                                const oldUrl = editingProductId
-                                  ? products.find((p) => p.id === editingProductId)?.image
-                                  : undefined;
-                                const res = await storageService.uploadImage(file, 'products', oldUrl);
-                                if (res.success && res.url) {
-                                  setProductForm((prev) => ({ ...prev, imageUrl: res.url! }));
-                                  const sizeInfo = res.originalSize && res.compressedSize
-                                    ? `บีบอัดรูปจาก ${formatBytes(res.originalSize)} เหลือ ${formatBytes(res.compressedSize)}`
-                                    : 'บีบอัดรูปภาพเสร็จสิ้น';
-                                  setProductImageStats(sizeInfo);
-                                  showToast('success', `อัปโหลดรูปสินค้าเข้า Supabase Storage สำเร็จ (${sizeInfo})`);
-                                } else {
-                                  showToast('error', res.error || 'อัปโหลดรูปไม่สำเร็จ');
-                                }
-                              } catch (err: any) {
-                                showToast('error', err.message || 'เกิดข้อผิดพลาดในการอัปโหลด');
-                              } finally {
-                                setProductImageUploading(false);
-                              }
-                            }}
+                            multiple
+                            disabled={productImageUploading || productForm.images.length >= 5}
+                            onChange={handleProductFilesUpload}
                             className="hidden"
                           />
                         </label>
+
+                        {/* Direct URL Input */}
+                        <div className="flex flex-1 gap-2">
+                          <input
+                            type="url"
+                            value={inputImageUrl}
+                            onChange={(e) => setInputImageUrl(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleAddImageUrl();
+                              }
+                            }}
+                            disabled={productForm.images.length >= 5}
+                            placeholder={
+                              productForm.images.length >= 5
+                                ? 'ครบโควตา 5 รูปแล้ว (ลบรูปเดิมเพื่อเพิ่มใหม่)'
+                                : 'หรือวาง URL รูปภาพที่นี่ (https://...)'
+                            }
+                            className="flex-1 px-3 py-2 bg-slate-50 rounded-xl border border-slate-200 text-xs focus:outline-sky-500 disabled:opacity-60"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleAddImageUrl}
+                            disabled={!inputImageUrl.trim() || productForm.images.length >= 5}
+                            className="px-3 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed transition-colors shrink-0 cursor-pointer"
+                          >
+                            + เพิ่ม URL
+                          </button>
+                        </div>
                       </div>
 
-                      {/* Live Image Preview Before Saving */}
-                      {productForm.imageUrl && (
-                        <div className="mt-2.5 p-2 bg-white rounded-xl border border-slate-200 flex items-center gap-3 animate-in fade-in">
-                          <div className="w-14 h-14 bg-slate-50 rounded-lg overflow-hidden border border-slate-100 p-1 flex items-center justify-center shrink-0">
-                            <img src={productForm.imageUrl} alt="ตัวอย่างรูปสินค้า" className="max-h-full max-w-full object-contain" />
+                      {/* Compression / Storage Status Badge */}
+                      {productImageStats && (
+                        <div className="text-[11px] text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200 flex items-center gap-1.5 animate-in fade-in">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span>{productImageStats}</span>
+                        </div>
+                      )}
+
+                      {/* 5-Images Preview Grid & Sorting / Management */}
+                      {productForm.images.length > 0 ? (
+                        <div className="space-y-2">
+                          <div className="text-[11px] text-slate-500 font-medium">
+                            พรีวิวรูปภาพก่อนบันทึก (สามารถคลิกเลื่อนซ้าย-ขวาเพื่อจัดลำดับ หรือคลิกตั้งเป็นรูปหลัก):
                           </div>
-                          <div className="min-w-0 flex-1 text-xs">
-                            <span className="font-bold text-slate-800 block">ตัวอย่างรูปภาพสินค้าก่อนบันทึก</span>
-                            <span className="text-[10px] text-emerald-600 font-semibold block truncate">
-                              {productImageStats || '🟢 รูปภาพพร้อมบันทึกลงฐานข้อมูล Supabase'}
-                            </span>
+                          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                            {productForm.images.map((imgUrl, idx) => {
+                              const isMain = idx === 0;
+                              return (
+                                <div
+                                  key={`${imgUrl}-${idx}`}
+                                  className={`relative bg-white rounded-2xl p-2 border-2 transition-all flex flex-col justify-between group/card shadow-2xs ${
+                                    isMain
+                                      ? 'border-sky-500 ring-2 ring-sky-200'
+                                      : 'border-slate-200 hover:border-slate-300'
+                                  }`}
+                                >
+                                  {/* Badge on top */}
+                                  <div className="flex items-center justify-between gap-1 mb-1">
+                                    {isMain ? (
+                                      <span className="bg-sky-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1 shadow-2xs">
+                                        <Star className="w-2.5 h-2.5 fill-current" /> รูปหลัก
+                                      </span>
+                                    ) : (
+                                      <span className="bg-slate-100 text-slate-600 text-[9px] font-semibold px-1.5 py-0.5 rounded">
+                                        รูปที่ {idx + 1}
+                                      </span>
+                                    )}
+
+                                    {/* Delete Button */}
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteProductImage(idx)}
+                                      className="w-5 h-5 rounded-md bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                                      title="ลบรูปนี้"
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  </div>
+
+                                  {/* Image View */}
+                                  <div className="w-full h-24 sm:h-28 rounded-lg overflow-hidden bg-slate-50 flex items-center justify-center p-1 border border-slate-100">
+                                    <img
+                                      src={imgUrl}
+                                      alt={`รูปสินค้า ${idx + 1}`}
+                                      className="max-h-full max-w-full object-contain"
+                                      onError={(e) => {
+                                        (e.currentTarget as HTMLImageElement).src =
+                                          'https://images.unsplash.com/photo-1548839140-29a749e1bc4e?auto=format&fit=crop&w=600&q=80';
+                                      }}
+                                    />
+                                  </div>
+
+                                  {/* Reordering Controls */}
+                                  <div className="mt-2 pt-1.5 border-t border-slate-100 flex items-center justify-between gap-1">
+                                    <div className="flex items-center gap-0.5">
+                                      {/* Move Left */}
+                                      <button
+                                        type="button"
+                                        disabled={idx === 0}
+                                        onClick={() => handleMoveProductImage(idx, 'left')}
+                                        className="p-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                                        title="เลื่อนไปข้างหน้า"
+                                      >
+                                        <ChevronLeft className="w-3.5 h-3.5" />
+                                      </button>
+                                      {/* Move Right */}
+                                      <button
+                                        type="button"
+                                        disabled={idx === productForm.images.length - 1}
+                                        onClick={() => handleMoveProductImage(idx, 'right')}
+                                        className="p-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                                        title="เลื่อนไปข้างหลัง"
+                                      >
+                                        <ChevronRight className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+
+                                    {!isMain && (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleSetMainProductImage(idx)}
+                                        className="text-[9px] font-semibold text-sky-600 hover:text-sky-800 hover:underline px-1 py-0.5 rounded cursor-pointer"
+                                        title="ตั้งเป็นรูปหลัก"
+                                      >
+                                        ตั้งรูปหลัก
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
+                        </div>
+                      ) : (
+                        <div className="p-6 bg-white rounded-2xl border-2 border-dashed border-slate-200 text-center space-y-2">
+                          <ImageIcon className="w-8 h-8 text-slate-300 mx-auto" />
+                          <p className="text-xs font-semibold text-slate-700">
+                            ยังไม่มีรูปภาพสินค้าในรายการ
+                          </p>
+                          <p className="text-[11px] text-slate-400 max-w-sm mx-auto">
+                            คลิกปุ่ม "อัปโหลดรูป" ด้านบนเพื่อเลือกรูปภาพจากเครื่อง (เลือกได้หลายรูปพร้อมกัน สูงสุด 5 รูป) หรือวาง URL รูปภาพ
+                          </p>
                         </div>
                       )}
                     </div>
@@ -1140,6 +1418,9 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                           <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-medium">
                             ID: {p.id}
                           </span>
+                          <span className="text-[10px] bg-sky-50 text-sky-700 border border-sky-200 px-1.5 py-0.5 rounded font-medium">
+                            📷 {p.images?.length || 1} รูป
+                          </span>
                         </div>
                         <div className="text-xs text-slate-500 mt-0.5">
                           เริ่มต้น <span className="font-bold text-sky-600">฿{p.startingMonthlyPrice.toLocaleString()}</span> / เดือน · หมวดหมู่: {p.categoryLabel}
@@ -1150,14 +1431,20 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                     <div className="flex items-center gap-2 self-end sm:self-center border-t sm:border-t-0 pt-2 sm:pt-0">
                       <button
                         onClick={() => {
+                          const existingImages = (p.images && p.images.length > 0)
+                            ? [...p.images]
+                            : (p.image ? [p.image] : []);
+
                           setEditingProductId(p.id);
                           setProductForm({
                             name: p.name,
                             price: p.startingMonthlyPrice,
-                            imageUrl: p.image,
+                            imageUrl: existingImages[0] || '',
+                            images: existingImages,
                             description: p.description,
                             category: p.category,
                           });
+                          setInputImageUrl('');
                           setProductImageStats(null);
                           setIsAddingProduct(true);
                         }}
