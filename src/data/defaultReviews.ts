@@ -16,7 +16,7 @@ export interface CustomerReviewItem {
 export const DEFAULT_CUSTOMER_REVIEWS: CustomerReviewItem[] = [
   {
     id: 'rev-1',
-    customerName: 'คุณวราภรณ์ สุขสถิต',
+    customerName: 'คุณวราภรณ์',
     location: 'กรุงเทพมหานคร',
     productName: 'Coway Neo Plus',
     rating: 5,
@@ -29,7 +29,7 @@ export const DEFAULT_CUSTOMER_REVIEWS: CustomerReviewItem[] = [
   },
   {
     id: 'rev-2',
-    customerName: 'คุณธนภัทร วัฒนากุล',
+    customerName: 'คุณธนภัทร',
     location: 'เชียงใหม่',
     productName: 'Coway My Ice',
     rating: 5,
@@ -42,7 +42,7 @@ export const DEFAULT_CUSTOMER_REVIEWS: CustomerReviewItem[] = [
   },
   {
     id: 'rev-3',
-    customerName: 'คุณพัชริดา เจริญรัตน์',
+    customerName: 'คุณพัชริดา',
     location: 'นนทบุรี',
     productName: 'Coway Noble Air',
     rating: 5,
@@ -55,7 +55,7 @@ export const DEFAULT_CUSTOMER_REVIEWS: CustomerReviewItem[] = [
   },
   {
     id: 'rev-4',
-    customerName: 'นพ. วิศรุต อัศวเมธา',
+    customerName: 'นพ. วิศรุต',
     location: 'ชลบุรี',
     productName: 'Coway Villaem II',
     rating: 5,

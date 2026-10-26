@@ -215,7 +215,7 @@ export const ReviewsTab: React.FC<ReviewsTabProps> = ({ formData, setFormData, s
                 type="text"
                 value={revForm.customerName || ''}
                 onChange={(e) => setRevForm({ ...revForm, customerName: e.target.value })}
-                placeholder="เช่น คุณวราภรณ์ สุขสถิต"
+                placeholder="เช่น คุณวราภรณ์"
                 className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 focus:outline-emerald-500 font-semibold"
               />
             </div>
