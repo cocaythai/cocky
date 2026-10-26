@@ -322,13 +322,13 @@ export default function App() {
           <span className="absolute -inset-0.5 rounded-2xl bg-slate-900 opacity-30 blur-xs animate-pulse" />
 
           <a
-            href={`tel:${siteSettings.phoneNumber || '020000000'}`}
+            href={`tel:${siteSettings.phoneNumber || '0992215445'}`}
             className="relative w-13 h-13 rounded-2xl bg-black hover:bg-slate-800 text-white shadow-xl flex items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer"
-            title={`โทรติดต่อด่วน ${siteSettings.phoneDisplay || '02-000-0000'}`}
+            title={`โทรติดต่อด่วน ${siteSettings.phoneDisplay || '099-221-5445'}`}
           >
             <Phone className="w-5 h-5 animate-pulse" />
             <span className="absolute right-15 bg-slate-900 text-white text-xs font-semibold py-1.5 px-3 rounded-xl whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
-              โทรด่วน {siteSettings.phoneDisplay || '02-000-0000'}
+              โทรด่วน {siteSettings.phoneDisplay || '099-221-5445'}
             </span>
           </a>
         </div>

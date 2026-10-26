@@ -132,11 +132,11 @@ export const Hero: React.FC<HeroProps> = ({
               </a>
 
               <a
-                href={`tel:${siteSettings?.phoneNumber || '020000000'}`}
+                href={`tel:${siteSettings?.phoneNumber || '0992215445'}`}
                 className="px-5 py-3.5 text-sm font-bold text-white bg-black hover:bg-slate-800 rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer focus:outline-hidden"
               >
                 <PhoneCall className="w-4 h-4 text-white" />
-                <span>โทร {siteSettings?.phoneDisplay || '02-000-0000'}</span>
+                <span>โทร {siteSettings?.phoneDisplay || '099-221-5445'}</span>
               </a>
 
               <a

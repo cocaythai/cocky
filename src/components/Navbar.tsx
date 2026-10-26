@@ -167,11 +167,11 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             {/* Direct Call CTA - Black */}
             <a
-              href={`tel:${siteSettings?.phoneNumber || '020000000'}`}
+              href={`tel:${siteSettings?.phoneNumber || '0992215445'}`}
               className="hidden md:inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-black hover:bg-slate-800 rounded-lg transition-colors shadow-xs whitespace-nowrap"
             >
               <Phone className="w-3.5 h-3.5 text-white" />
-              <span>{siteSettings?.phoneDisplay || '02-000-0000'}</span>
+              <span>{siteSettings?.phoneDisplay || '099-221-5445'}</span>
             </a>
 
             {/* Mobile Menu Toggle Button */}

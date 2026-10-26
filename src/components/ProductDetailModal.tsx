@@ -304,11 +304,11 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   </button>
 
                   <a
-                    href="tel:0829988998"
+                    href={`tel:${siteSettings?.phoneNumber || '099-221-5445'}`}
                     className="py-3 px-3 bg-black hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-xs"
                   >
                     <Phone className="w-3.5 h-3.5" />
-                    <span>โทรติดต่อทันที</span>
+                    <span>โทร {siteSettings?.phoneDisplay || '099-221-5445'}</span>
                   </a>
                 </div>
               </div>

@@ -37,7 +37,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ siteSettings }) 
               <div className="space-y-4 text-xs sm:text-sm">
                 {/* Phone */}
                 <a
-                  href={`tel:${siteSettings?.phoneNumber || '020000000'}`}
+                  href={`tel:${siteSettings?.phoneNumber || '0992215445'}`}
                   className="flex items-center gap-4 p-3.5 bg-white rounded-2xl border border-slate-200/60 hover:border-sky-300 transition-colors group"
                 >
                   <div className="w-11 h-11 rounded-xl bg-sky-100 text-sky-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
@@ -46,7 +46,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ siteSettings }) 
                   <div>
                     <div className="text-xs text-slate-500">โทรสายด่วน ({siteSettings?.contactHours || 'ทุกวัน 08.30 - 20.00 น.'})</div>
                     <div className="font-bold text-slate-900 text-base group-hover:text-sky-600">
-                      {siteSettings?.phoneDisplay || '02-000-0000'}
+                      {siteSettings?.phoneDisplay || '099-221-5445'}
                     </div>
                   </div>
                 </a>

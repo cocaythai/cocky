@@ -155,11 +155,11 @@ export const InquiryDrawer: React.FC<InquiryDrawerProps> = ({
               </a>
 
               <a
-                href="tel:0829988998"
+                href={`tel:${siteSettings?.phoneNumber || '099-221-5445'}`}
                 className="w-full py-2.5 px-4 bg-black hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition-colors flex items-center justify-center gap-2 shadow-xs"
               >
                 <Phone className="w-3.5 h-3.5 text-white" />
-                <span>โทรด่วนปรึกษาเจ้าหน้าที่</span>
+                <span>โทรด่วน {siteSettings?.phoneDisplay || '099-221-5445'}</span>
               </a>
             </div>
 

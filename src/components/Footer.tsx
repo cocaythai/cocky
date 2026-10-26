@@ -136,8 +136,8 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, siteSettings }) => {
             <ul className="space-y-2.5 text-xs">
               <li className="flex items-center gap-2">
                 <Phone className="w-4 h-4 text-sky-400 shrink-0" />
-                <a href={`tel:${siteSettings?.phoneNumber || '020000000'}`} className="hover:text-white transition-colors">
-                  {siteSettings?.phoneDisplay || '02-000-0000'}
+                <a href={`tel:${siteSettings?.phoneNumber || '0992215445'}`} className="hover:text-white transition-colors">
+                  {siteSettings?.phoneDisplay || '099-221-5445'}
                 </a>
               </li>
               <li className="flex items-center gap-2">
