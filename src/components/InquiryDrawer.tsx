@@ -1,5 +1,6 @@
 import React from 'react';
 import { InquiryItem } from '../types';
+import { SiteSettings } from '../types/settings';
 import { X, Trash2, MessageCircle, Phone, ArrowRight, ShoppingBag, ShieldCheck } from 'lucide-react';
 
 interface InquiryDrawerProps {
@@ -8,6 +9,7 @@ interface InquiryDrawerProps {
   items: InquiryItem[];
   onRemoveItem: (index: number) => void;
   onClearItems: () => void;
+  siteSettings?: SiteSettings;
 }
 
 export const InquiryDrawer: React.FC<InquiryDrawerProps> = ({
@@ -16,6 +18,7 @@ export const InquiryDrawer: React.FC<InquiryDrawerProps> = ({
   items,
   onRemoveItem,
   onClearItems,
+  siteSettings,
 }) => {
   if (!isOpen) return null;
 
@@ -33,7 +36,9 @@ export const InquiryDrawer: React.FC<InquiryDrawerProps> = ({
     return encodeURIComponent(text);
   };
 
-  const lineUrl = `https://line.me/R/ti/p/@cowayth?text=${generateLineSummary()}`;
+  const rawLineId = siteSettings?.lineId || '@cowaythailand';
+  const lineIdWithAt = rawLineId.trim().startsWith('@') ? rawLineId.trim() : `@${rawLineId.trim()}`;
+  const lineUrl = `https://line.me/R/ti/p/${lineIdWithAt}?text=${generateLineSummary()}`;
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden bg-slate-900/60 backdrop-blur-xs flex justify-end animate-in fade-in duration-200">

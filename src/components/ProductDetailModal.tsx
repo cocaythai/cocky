@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { CowayProduct, SubscriptionOption } from '../types';
+import { SiteSettings } from '../types/settings';
 import {
   X,
   Check,
@@ -25,6 +26,7 @@ interface ProductDetailModalProps {
   onClose: () => void;
   onAddToInquiry: (product: CowayProduct, option: SubscriptionOption) => void;
   onDirectContact: (product: CowayProduct, option: SubscriptionOption) => void;
+  siteSettings?: SiteSettings;
 }
 
 export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
@@ -32,6 +34,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   onClose,
   onAddToInquiry,
   onDirectContact,
+  siteSettings,
 }) => {
   if (!product) return null;
 
@@ -60,7 +63,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const lineChatUrl = `https://line.me/R/ti/p/@cowayth?text=${encodeURIComponent(
+  const rawLineId = siteSettings?.lineId || '@cowaythailand';
+  const lineIdWithAt = rawLineId.trim().startsWith('@') ? rawLineId.trim() : `@${rawLineId.trim()}`;
+  const lineChatUrl = `https://line.me/R/ti/p/${lineIdWithAt}?text=${encodeURIComponent(
     `สวัสดีครับ/ค่ะ สนใจสั่งซื้อสินค้า Coway รุ่น ${product.name} (${product.modelCode}) แพ็กเกจ ${selectedOption.label} ราคา ${selectedOption.monthlyPrice} บาท/เดือน ขอทราบโปรโมชั่นพิเศษและคิวติดตั้งครับ`
   )}`;
 

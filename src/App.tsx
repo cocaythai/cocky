@@ -351,6 +351,7 @@ export default function App() {
           handleAddToInquiry(product, option);
           setSelectedProduct(null);
         }}
+        siteSettings={siteSettings}
       />
 
       <ProductComparisonModal
@@ -376,6 +377,7 @@ export default function App() {
           setInquiryItems((prev) => prev.filter((_, i) => i !== idx))
         }
         onClearItems={() => setInquiryItems([])}
+        siteSettings={siteSettings}
       />
     </div>
   );
