@@ -7,9 +7,6 @@ import {
   ShieldCheck,
   Clock,
   Sparkles,
-  Droplets,
-  Flame,
-  Snowflake,
   MessageCircle,
   Phone,
   ShoppingBag,
@@ -185,31 +182,6 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 </div>
               )}
 
-              {/* Water Types Tag Pills */}
-              {product.waterTypes && (
-                <div className="mt-3 flex flex-wrap justify-center gap-2 text-xs font-medium">
-                  {product.waterTypes.includes('hot') && (
-                    <span className="inline-flex items-center gap-1 text-rose-700 bg-rose-50 px-2.5 py-1 rounded-md border border-rose-100">
-                      <Flame className="w-3.5 h-3.5 text-rose-500" /> น้ำร้อน
-                    </span>
-                  )}
-                  {product.waterTypes.includes('cold') && (
-                    <span className="inline-flex items-center gap-1 text-sky-700 bg-sky-50 px-2.5 py-1 rounded-md border border-sky-100">
-                      <Snowflake className="w-3.5 h-3.5 text-sky-500" /> น้ำเย็น
-                    </span>
-                  )}
-                  {product.waterTypes.includes('room') && (
-                    <span className="inline-flex items-center gap-1 text-slate-700 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200">
-                      <Droplets className="w-3.5 h-3.5 text-slate-500" /> น้ำปกติ
-                    </span>
-                  )}
-                  {product.waterTypes.includes('ice') && (
-                    <span className="inline-flex items-center gap-1 text-cyan-800 bg-cyan-50 px-2.5 py-1 rounded-md border border-cyan-100 font-semibold">
-                      🧊 น้ำแข็งใสสะอาด
-                    </span>
-                  )}
-                </div>
-              )}
             </div>
 
             {/* Right: Product Details & Subscription Selector */}
