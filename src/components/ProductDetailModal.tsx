@@ -63,11 +63,14 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const rawLineId = siteSettings?.lineId || '@cowaythailand';
-  const lineIdWithAt = rawLineId.trim().startsWith('@') ? rawLineId.trim() : `@${rawLineId.trim()}`;
-  const lineChatUrl = `https://line.me/R/ti/p/${lineIdWithAt}?text=${encodeURIComponent(
-    `สวัสดีครับ/ค่ะ สนใจสั่งซื้อสินค้า Coway รุ่น ${product.name} (${product.modelCode}) แพ็กเกจ ${selectedOption.label} ราคา ${selectedOption.monthlyPrice} บาท/เดือน ขอทราบโปรโมชั่นพิเศษและคิวติดตั้งครับ`
-  )}`;
+  const lineChatUrl = siteSettings?.lineUrl || 'https://line.me/ti/p/~@cowaythailand';
+
+  const handleLineClick = () => {
+    const textToCopy = `สวัสดีครับ/ค่ะ สนใจสั่งซื้อสินค้า Coway รุ่น ${product.name} (${product.modelCode}) แพ็กเกจ ${selectedOption.label} ราคา ฿${selectedOption.monthlyPrice.toLocaleString()}/เดือน ขอทราบโปรโมชั่นพิเศษและคิวติดตั้งครับ`;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(textToCopy).catch(() => {});
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200">
@@ -284,7 +287,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   href={lineChatUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full py-3.5 px-4 bg-[#06c755] hover:bg-[#05b34c] text-white font-bold text-sm rounded-xl transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
+                  onClick={handleLineClick}
+                  className="w-full py-3.5 px-4 bg-[#06c755] hover:bg-[#05b34c] text-white font-bold text-sm rounded-xl transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg cursor-pointer"
                 >
                   <MessageCircle className="w-4 h-4" />
                   <span>แอด LINE สั่งซื้อ / ปรึกษาโปรโมชั่น</span>

@@ -27,18 +27,19 @@ export const InquiryDrawer: React.FC<InquiryDrawerProps> = ({
     0
   );
 
-  const generateLineSummary = () => {
+  const lineUrl = siteSettings?.lineUrl || 'https://line.me/ti/p/~@cowaythailand';
+
+  const handleLineClick = () => {
     let text = 'สวัสดีครับ/ค่ะ สนใจขอใบเสนอราคาและโปรโมชั่นพิเศษ Coway ดังนี้:\n';
     items.forEach((item, idx) => {
       text += `${idx + 1}. ${item.product.name} (${item.product.modelCode}) - ${item.selectedOption.label} ราคา ฿${item.selectedOption.monthlyPrice.toLocaleString()}/เดือน (จำนวน ${item.quantity} เครื่อง)\n`;
     });
     text += `\nยอดรวมค่าบริการรายเดือนประมาณการ: ฿${totalMonthly.toLocaleString()} บาท/เดือน\nต้องการปรึกษาเรื่องเงื่อนไขและคิวติดตั้งครับ`;
-    return encodeURIComponent(text);
-  };
 
-  const rawLineId = siteSettings?.lineId || '@cowaythailand';
-  const lineIdWithAt = rawLineId.trim().startsWith('@') ? rawLineId.trim() : `@${rawLineId.trim()}`;
-  const lineUrl = `https://line.me/R/ti/p/${lineIdWithAt}?text=${generateLineSummary()}`;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).catch(() => {});
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden bg-slate-900/60 backdrop-blur-xs flex justify-end animate-in fade-in duration-200">
@@ -146,7 +147,8 @@ export const InquiryDrawer: React.FC<InquiryDrawerProps> = ({
                 href={lineUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full py-3 px-4 bg-[#06c755] hover:bg-[#05b34c] text-white font-bold text-xs sm:text-sm rounded-xl transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
+                onClick={handleLineClick}
+                className="w-full py-3 px-4 bg-[#06c755] hover:bg-[#05b34c] text-white font-bold text-xs sm:text-sm rounded-xl transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg cursor-pointer"
               >
                 <MessageCircle className="w-4 h-4" />
                 <span>แอด LINE ส่งรายการขอโปรโมชั่นพิเศษ</span>
