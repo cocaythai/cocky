@@ -276,8 +276,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               {/* Cash Price Notice */}
               <div className="text-xs text-slate-500 flex items-center justify-between pt-1">
                 <span>ราคาชำระเงินสด (พร้อมแพ็กเกจบริการ 1 ปี):</span>
-                <span className="font-mono font-semibold text-slate-700">
-                  ฿{product.cashPrice.toLocaleString()}
+                <span className="font-semibold text-slate-700">
+                  สอบถามเจ้าหน้าที่
                 </span>
               </div>
 

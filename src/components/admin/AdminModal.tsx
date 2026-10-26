@@ -4,9 +4,9 @@ import { Article } from '../../types/article';
 import { DEFAULT_ARTICLES } from '../../data/defaultArticles';
 import { DEFAULT_KNOWLEDGE_TIPS } from '../../data/defaultKnowledge';
 import { DEFAULT_CUSTOMER_REVIEWS } from '../../data/defaultReviews';
-import { CowayProduct } from '../../types/index.ts';
+import { CowayProduct, SubscriptionOption, ProductHighlight } from '../../types/index.ts';
 import { settingsService } from '../../services/settingsService';
-import { adminProductService } from '../../services/adminProductService';
+import { adminProductService, AdminProductPayload } from '../../services/adminProductService';
 import { storageService, STORAGE_BUCKET } from '../../services/storageService';
 import { formatBytes } from '../../utils/imageCompressor';
 import { BannersTab } from './tabs/BannersTab';
@@ -53,6 +53,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Star,
+  Zap,
 } from 'lucide-react';
 
 export type AdminMenuTab = 'dashboard' | 'products' | 'banners' | 'articles' | 'knowledge' | 'reviews' | 'contact' | 'settings';
@@ -98,6 +99,17 @@ export const AdminModal: React.FC<AdminModalProps> = ({
     images: [] as string[], // Up to 5 product images
     description: '',
     category: 'water',
+    modelCode: '',
+    tagline: '',
+    subscriptionOptions: [] as SubscriptionOption[],
+    highlights: [] as ProductHighlight[],
+    tankCapacity: '',
+    filtrationSystem: '',
+    coverageArea: '',
+    dimensions: '',
+    weight: '',
+    powerConsumption: '',
+    codyCycle: '',
   });
   const [productSearch, setProductSearch] = useState('');
   const [productCategoryFilter, setProductCategoryFilter] = useState('all');
@@ -298,6 +310,67 @@ export const AdminModal: React.FC<AdminModalProps> = ({
     showToast('success', 'ลบรูปภาพออกจากสินค้าแล้ว (หากกดบันทึก ระบบจะลบไฟล์ที่ไม่ได้ใช้ออกจาก Storage อัตโนมัติ)');
   };
 
+  // Subscription Options management helpers
+  const handleAddSubscriptionOption = () => {
+    setProductForm((prev) => ({
+      ...prev,
+      subscriptionOptions: [
+        ...prev.subscriptionOptions,
+        {
+          years: 5,
+          monthlyPrice: prev.price || 790,
+          label: `สัญญา ${prev.subscriptionOptions.length + 1} ปี`,
+          badge: '',
+          codyService: 'ฟรีบริการ Cody ดูแลตลอดสัญญา',
+        },
+      ],
+    }));
+  };
+
+  const handleUpdateSubscriptionOption = (index: number, field: keyof SubscriptionOption, value: any) => {
+    setProductForm((prev) => {
+      const updated = [...prev.subscriptionOptions];
+      updated[index] = { ...updated[index], [field]: value };
+      return { ...prev, subscriptionOptions: updated };
+    });
+  };
+
+  const handleRemoveSubscriptionOption = (index: number) => {
+    setProductForm((prev) => ({
+      ...prev,
+      subscriptionOptions: prev.subscriptionOptions.filter((_, i) => i !== index),
+    }));
+  };
+
+  // Highlights management helpers
+  const handleAddHighlight = () => {
+    setProductForm((prev) => ({
+      ...prev,
+      highlights: [
+        ...prev.highlights,
+        {
+          title: 'จุดเด่นและนวัตกรรมใหม่',
+          description: 'รายละเอียดคุณสมบัติพิเศษและนวัตกรรมเฉพาะรุ่น',
+        },
+      ],
+    }));
+  };
+
+  const handleUpdateHighlight = (index: number, field: keyof ProductHighlight, value: string) => {
+    setProductForm((prev) => {
+      const updated = [...prev.highlights];
+      updated[index] = { ...updated[index], [field]: value };
+      return { ...prev, highlights: updated };
+    });
+  };
+
+  const handleRemoveHighlight = (index: number) => {
+    setProductForm((prev) => ({
+      ...prev,
+      highlights: prev.highlights.filter((_, i) => i !== index),
+    }));
+  };
+
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!productForm.name) {
@@ -316,6 +389,26 @@ export const AdminModal: React.FC<AdminModalProps> = ({
 
     setIsProductSubmitting(true);
     try {
+      const payload: AdminProductPayload = {
+        name: productForm.name,
+        price: Number(productForm.price),
+        image_url: currentImages[0],
+        images: currentImages,
+        description: productForm.description,
+        category: productForm.category,
+        model_code: productForm.modelCode,
+        tagline: productForm.tagline,
+        subscription_options: productForm.subscriptionOptions,
+        highlights: productForm.highlights,
+        tank_capacity: productForm.tankCapacity,
+        filtration_system: productForm.filtrationSystem,
+        coverage_area: productForm.coverageArea,
+        dimensions: productForm.dimensions,
+        weight: productForm.weight,
+        power_consumption: productForm.powerConsumption,
+        cody_cycle: productForm.codyCycle,
+      };
+
       if (editingProductId) {
         const oldProduct = products.find((p) => p.id === editingProductId);
         const oldImages = oldProduct?.images && oldProduct.images.length > 0
@@ -324,14 +417,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
 
         const res = await adminProductService.updateProduct(
           editingProductId,
-          {
-            name: productForm.name,
-            price: Number(productForm.price),
-            image_url: currentImages[0],
-            images: currentImages,
-            description: productForm.description,
-            category: productForm.category,
-          },
+          payload,
           oldImages
         );
         if (res.success) {
@@ -343,18 +429,29 @@ export const AdminModal: React.FC<AdminModalProps> = ({
           showToast('error', res.message);
         }
       } else {
-        const res = await adminProductService.createProduct({
-          name: productForm.name,
-          price: Number(productForm.price),
-          image_url: currentImages[0],
-          images: currentImages,
-          description: productForm.description,
-          category: productForm.category,
-        });
+        const res = await adminProductService.createProduct(payload);
         if (res.success) {
           showToast('success', res.message);
           setIsAddingProduct(false);
-          setProductForm({ name: '', price: 790, imageUrl: '', images: [], description: '', category: 'water' });
+          setProductForm({
+            name: '',
+            price: 790,
+            imageUrl: '',
+            images: [],
+            description: '',
+            category: 'water',
+            modelCode: '',
+            tagline: '',
+            subscriptionOptions: [],
+            highlights: [],
+            tankCapacity: '',
+            filtrationSystem: '',
+            coverageArea: '',
+            dimensions: '',
+            weight: '',
+            powerConsumption: '',
+            codyCycle: '',
+          });
           onRefreshProducts();
         } else {
           showToast('error', res.message);
@@ -949,7 +1046,31 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                   onClick={() => {
                     setIsAddingProduct(true);
                     setEditingProductId(null);
-                    setProductForm({ name: '', price: 790, imageUrl: '', images: [], description: '', category: 'water' });
+                    setProductForm({
+                      name: '',
+                      price: 790,
+                      imageUrl: '',
+                      images: [],
+                      description: '',
+                      category: 'water',
+                      modelCode: '',
+                      tagline: '',
+                      subscriptionOptions: [
+                        { years: 5, monthlyPrice: 790, label: 'สัญญา 5 ปี (แนะนำ)', badge: 'ยอดนิยม', codyService: 'ดูแลฟรี 5 ปีเต็ม ทำความสะอาดทุก 2 เดือน เปลี่ยนไส้กรองทุก 4 เดือน' },
+                        { years: 7, monthlyPrice: 690, label: 'สัญญา 7 ปี (ผ่อนเบาที่สุด)', badge: 'ผ่อนสบาย', codyService: 'ดูแลฟรี 7 ปีเต็ม ไม่มีค่าใช้จ่ายแอบแฝง' }
+                      ],
+                      highlights: [
+                        { title: 'RO Membrane กรองบริสุทธิ์', description: 'กรองละเอียดถึง 0.0001 ไมครอน ขจัดโลหะหนักและเชื้อโรคได้อย่างหมดจด' },
+                        { title: 'บริการ Cody ถึงบ้านฟรี', description: 'ผู้เชี่ยวชาญเข้าตรวจเช็ก ล้างระบบฆ่าเชื้อทุก 2 เดือน เปลี่ยนไส้กรองทุก 4 เดือน' }
+                      ],
+                      tankCapacity: '5.8 ลิตร',
+                      filtrationSystem: 'Coway RO Membrane 6 ขั้นตอน',
+                      coverageArea: '',
+                      dimensions: '260 x 505 x 500 มม.',
+                      weight: '18.0 กก.',
+                      powerConsumption: 'ความร้อน 300W / ความเย็น 0.7A',
+                      codyCycle: 'ทำความสะอาดฆ่าเชื้อถังทุก 2 เดือน / เปลี่ยนไส้กรองทุก 4 เดือน',
+                    });
                     setInputImageUrl('');
                     setProductImageStats(null);
                   }}
@@ -989,18 +1110,18 @@ export const AdminModal: React.FC<AdminModalProps> = ({
               {isAddingProduct && (
                 <form
                   onSubmit={handleSaveProduct}
-                  className="p-5 bg-sky-50/60 rounded-3xl border-2 border-sky-200 space-y-4 animate-in fade-in"
+                  className="p-5 bg-sky-50/60 rounded-3xl border-2 border-sky-200 space-y-5 animate-in fade-in"
                 >
-                  <div className="flex justify-between items-center">
-                    <h4 className="font-bold text-sm text-slate-900">
-                      {editingProductId ? '✏️ แก้ไขข้อมูลสินค้า' : '➕ เพิ่มสินค้าใหม่ลง Supabase'}
+                  <div className="flex justify-between items-center pb-2 border-b border-sky-200">
+                    <h4 className="font-bold text-sm sm:text-base text-slate-900 flex items-center gap-2">
+                      <span>{editingProductId ? '✏️ แก้ไขข้อมูลสินค้าและสเปกครบถ้วน' : '➕ เพิ่มสินค้าใหม่ลง Supabase'}</span>
                     </h4>
                     <button
                       type="button"
                       onClick={() => setIsAddingProduct(false)}
-                      className="text-slate-400 hover:text-slate-600"
+                      className="text-slate-400 hover:text-slate-600 p-1"
                     >
-                      <X className="w-4 h-4" />
+                      <X className="w-5 h-5" />
                     </button>
                   </div>
 
@@ -1013,7 +1134,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                         value={productForm.name}
                         onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
                         placeholder="เช่น Coway Gracie (CHP-6200N)"
-                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-200 focus:outline-sky-500"
+                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-200 focus:outline-sky-500 font-semibold"
                       />
                     </div>
 
@@ -1041,6 +1162,28 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                         <option value="bidet">ฝารองนั่งสุขภัณฑ์ (Bidet)</option>
                         <option value="mattress">เก้าอี้นวด (Massage Chair)</option>
                       </select>
+                    </div>
+
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">รหัสรุ่น (Model Code)</label>
+                      <input
+                        type="text"
+                        value={productForm.modelCode}
+                        onChange={(e) => setProductForm({ ...productForm, modelCode: e.target.value })}
+                        placeholder="เช่น CHP-264L"
+                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-200 focus:outline-sky-500 font-mono"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <label className="block font-semibold text-slate-700 mb-1">สโลแกนสินค้า (Tagline)</label>
+                      <input
+                        type="text"
+                        value={productForm.tagline}
+                        onChange={(e) => setProductForm({ ...productForm, tagline: e.target.value })}
+                        placeholder="เช่น เครื่องกรองน้ำรุ่นยอดนิยม ดีไซน์สลิม"
+                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-200 focus:outline-sky-500"
+                      />
                     </div>
 
                     <div className="sm:col-span-2 space-y-3">
@@ -1252,28 +1395,293 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                         className="w-full px-3 py-2 bg-white rounded-xl border border-slate-200 focus:outline-sky-500"
                       />
                     </div>
+
+                    {/* 1. SECTION: Subscription Options (เลือกแพ็กเกจสัญญาบริการ) */}
+                    <div className="sm:col-span-2 pt-3 border-t border-sky-200 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h5 className="font-bold text-slate-900 text-xs sm:text-sm flex items-center gap-1.5">
+                            <Zap className="w-4 h-4 text-sky-600" />
+                            <span>1. เลือกแพ็กเกจสัญญาบริการ (Coway Subscription Options)</span>
+                          </h5>
+                          <p className="text-[11px] text-slate-500">
+                            กำหนดระยะเวลาสัญญา ค่างวดรายเดือน ป้ายกำกับ และรายละเอียดบริการ Cody
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleAddSubscriptionOption}
+                          className="px-3 py-1.5 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer shrink-0 shadow-xs"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>เพิ่มแพ็กเกจ</span>
+                        </button>
+                      </div>
+
+                      <div className="space-y-3">
+                        {productForm.subscriptionOptions.map((opt, idx) => (
+                          <div
+                            key={idx}
+                            className="p-3.5 bg-white rounded-2xl border border-sky-200 space-y-2 shadow-2xs"
+                          >
+                            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
+                              <span className="font-bold text-xs text-sky-900">
+                                แพ็กเกจที่ {idx + 1}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveSubscriptionOption(idx)}
+                                className="text-rose-500 hover:text-rose-700 p-1 text-xs font-semibold cursor-pointer flex items-center gap-1"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span>ลบแพ็กเกจนี้</span>
+                              </button>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 text-xs">
+                              <div>
+                                <label className="block text-[11px] font-medium text-slate-600 mb-0.5">ชื่อแพ็กเกจ</label>
+                                <input
+                                  type="text"
+                                  value={opt.label}
+                                  onChange={(e) => handleUpdateSubscriptionOption(idx, 'label', e.target.value)}
+                                  placeholder="เช่น สัญญา 5 ปี (แนะนำ)"
+                                  className="w-full px-2.5 py-1.5 bg-slate-50 rounded-lg border border-slate-200"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-[11px] font-medium text-slate-600 mb-0.5">ราคารายเดือน (฿/เดือน)</label>
+                                <input
+                                  type="number"
+                                  value={opt.monthlyPrice}
+                                  onChange={(e) => handleUpdateSubscriptionOption(idx, 'monthlyPrice', Number(e.target.value))}
+                                  placeholder="790"
+                                  className="w-full px-2.5 py-1.5 bg-slate-50 rounded-lg border border-slate-200 font-mono"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-[11px] font-medium text-slate-600 mb-0.5">ระยะเวลาสัญญา (ปี)</label>
+                                <input
+                                  type="number"
+                                  value={opt.years}
+                                  onChange={(e) => handleUpdateSubscriptionOption(idx, 'years', Number(e.target.value))}
+                                  placeholder="5"
+                                  className="w-full px-2.5 py-1.5 bg-slate-50 rounded-lg border border-slate-200 font-mono"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-[11px] font-medium text-slate-600 mb-0.5">ป้ายกำกับ (Badge)</label>
+                                <input
+                                  type="text"
+                                  value={opt.badge || ''}
+                                  onChange={(e) => handleUpdateSubscriptionOption(idx, 'badge', e.target.value)}
+                                  placeholder="เช่น ยอดนิยม, ผ่อนสบาย"
+                                  className="w-full px-2.5 py-1.5 bg-slate-50 rounded-lg border border-slate-200"
+                                />
+                              </div>
+
+                              <div className="sm:col-span-4">
+                                <label className="block text-[11px] font-medium text-slate-600 mb-0.5">รายละเอียดบริการ Cody</label>
+                                <input
+                                  type="text"
+                                  value={opt.codyService}
+                                  onChange={(e) => handleUpdateSubscriptionOption(idx, 'codyService', e.target.value)}
+                                  placeholder="เช่น ดูแลฟรีตลอดสัญญา ล้างถังทุก 2 เดือน เปลี่ยนไส้กรองทุก 4 เดือน"
+                                  className="w-full px-2.5 py-1.5 bg-slate-50 rounded-lg border border-slate-200"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* 2. SECTION: Product Highlights & Innovations (จุดเด่นและนวัตกรรมเฉพาะของรุ่น) */}
+                    <div className="sm:col-span-2 pt-3 border-t border-sky-200 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h5 className="font-bold text-slate-900 text-xs sm:text-sm flex items-center gap-1.5">
+                            <Sparkles className="w-4 h-4 text-amber-500" />
+                            <span>2. จุดเด่นและนวัตกรรมเฉพาะของรุ่น (Product Highlights)</span>
+                          </h5>
+                          <p className="text-[11px] text-slate-500">
+                            หัวข้อและคำอธิบายเทคโนโลยี นวัตกรรมเด่นเพื่อดึงดูดลูกค้า
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleAddHighlight}
+                          className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer shrink-0 shadow-xs"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>เพิ่มจุดเด่น</span>
+                        </button>
+                      </div>
+
+                      <div className="space-y-3">
+                        {productForm.highlights.map((hl, idx) => (
+                          <div
+                            key={idx}
+                            className="p-3.5 bg-white rounded-2xl border border-amber-200 space-y-2 shadow-2xs"
+                          >
+                            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
+                              <span className="font-bold text-xs text-amber-900">
+                                จุดเด่นที่ {idx + 1}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveHighlight(idx)}
+                                className="text-rose-500 hover:text-rose-700 p-1 text-xs font-semibold cursor-pointer flex items-center gap-1"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span>ลบจุดเด่นนี้</span>
+                              </button>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-2 text-xs">
+                              <div>
+                                <label className="block text-[11px] font-medium text-slate-600 mb-0.5">หัวข้อจุดเด่น / นวัตกรรม</label>
+                                <input
+                                  type="text"
+                                  value={hl.title}
+                                  onChange={(e) => handleUpdateHighlight(idx, 'title', e.target.value)}
+                                  placeholder="เช่น RO Membrane กรองบริสุทธิ์ 0.0001 ไมครอน"
+                                  className="w-full px-2.5 py-1.5 bg-slate-50 rounded-lg border border-slate-200 font-semibold text-slate-900"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-[11px] font-medium text-slate-600 mb-0.5">คำอธิบายรายละเอียด</label>
+                                <textarea
+                                  rows={2}
+                                  value={hl.description}
+                                  onChange={(e) => handleUpdateHighlight(idx, 'description', e.target.value)}
+                                  placeholder="กรองขจัดเชื้อโรค ไวรัส โลหะหนักได้อย่างมีประสิทธิภาพสูงสุด..."
+                                  className="w-full px-2.5 py-1.5 bg-slate-50 rounded-lg border border-slate-200"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* 3. SECTION: Technical Specifications (ข้อมูลสเปกทางเทคนิค) */}
+                    <div className="sm:col-span-2 pt-3 border-t border-sky-200 space-y-3">
+                      <div>
+                        <h5 className="font-bold text-slate-900 text-xs sm:text-sm flex items-center gap-1.5">
+                          <Sliders className="w-4 h-4 text-sky-600" />
+                          <span>3. ข้อมูลสเปกทางเทคนิค (Technical Specifications)</span>
+                        </h5>
+                        <p className="text-[11px] text-slate-500">
+                          ความจุถังน้ำ ระบบการกรอง ขนาด ตัวเครื่อง น้ำหนัก และการกินไฟ
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-white p-3.5 rounded-2xl border border-sky-200 shadow-2xs">
+                        <div>
+                          <label className="block font-medium text-slate-700 mb-1">ความจุถังน้ำ (Tank Capacity)</label>
+                          <input
+                            type="text"
+                            value={productForm.tankCapacity}
+                            onChange={(e) => setProductForm({ ...productForm, tankCapacity: e.target.value })}
+                            placeholder="เช่น 5.8 ลิตร (น้ำปกติ 2.5L / เย็น 2.3L / ร้อน 1.0L)"
+                            className="w-full px-3 py-1.5 bg-slate-50 rounded-xl border border-slate-200"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block font-medium text-slate-700 mb-1">ระบบการกรอง (Filtration System)</label>
+                          <input
+                            type="text"
+                            value={productForm.filtrationSystem}
+                            onChange={(e) => setProductForm({ ...productForm, filtrationSystem: e.target.value })}
+                            placeholder="เช่น Coway RO Membrane 6 ขั้นตอน"
+                            className="w-full px-3 py-1.5 bg-slate-50 rounded-xl border border-slate-200"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block font-medium text-slate-700 mb-1">พื้นที่การครอบคลุม (Coverage Area)</label>
+                          <input
+                            type="text"
+                            value={productForm.coverageArea}
+                            onChange={(e) => setProductForm({ ...productForm, coverageArea: e.target.value })}
+                            placeholder="เช่น 33 ตร.ม. (สำหรับเครื่องฟอกอากาศ)"
+                            className="w-full px-3 py-1.5 bg-slate-50 rounded-xl border border-slate-200"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block font-medium text-slate-700 mb-1">ขนาดตัวเครื่อง (Dimensions ก x ล x ส)</label>
+                          <input
+                            type="text"
+                            value={productForm.dimensions}
+                            onChange={(e) => setProductForm({ ...productForm, dimensions: e.target.value })}
+                            placeholder="เช่น 260 x 505 x 500 มม."
+                            className="w-full px-3 py-1.5 bg-slate-50 rounded-xl border border-slate-200 font-mono"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block font-medium text-slate-700 mb-1">น้ำหนักตัวเครื่อง (Weight)</label>
+                          <input
+                            type="text"
+                            value={productForm.weight}
+                            onChange={(e) => setProductForm({ ...productForm, weight: e.target.value })}
+                            placeholder="เช่น 18.0 กก."
+                            className="w-full px-3 py-1.5 bg-slate-50 rounded-xl border border-slate-200 font-mono"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block font-medium text-slate-700 mb-1">อัตราการกินไฟ (Power Consumption)</label>
+                          <input
+                            type="text"
+                            value={productForm.powerConsumption}
+                            onChange={(e) => setProductForm({ ...productForm, powerConsumption: e.target.value })}
+                            placeholder="เช่น ความร้อน 300W / ความเย็น 0.7A"
+                            className="w-full px-3 py-1.5 bg-slate-50 rounded-xl border border-slate-200"
+                          />
+                        </div>
+
+                        <div className="sm:col-span-2">
+                          <label className="block font-medium text-slate-700 mb-1">รอบการบริการ Cody (Cody Service Cycle)</label>
+                          <input
+                            type="text"
+                            value={productForm.codyCycle}
+                            onChange={(e) => setProductForm({ ...productForm, codyCycle: e.target.value })}
+                            placeholder="เช่น ทำความสะอาดฆ่าเชื้อถังทุก 2 เดือน / เปลี่ยนไส้กรองทุก 4 เดือน"
+                            className="w-full px-3 py-1.5 bg-slate-50 rounded-xl border border-slate-200"
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="flex justify-end gap-2 pt-2">
+                  <div className="flex justify-end gap-2 pt-3 border-t border-sky-200">
                     <button
                       type="button"
                       onClick={() => setIsAddingProduct(false)}
-                      className="px-4 py-2 text-xs text-slate-600 hover:bg-slate-200 rounded-xl"
+                      className="px-4 py-2.5 text-xs text-slate-600 hover:bg-slate-200 rounded-xl font-medium transition-colors cursor-pointer"
                     >
                       ยกเลิก
                     </button>
                     <button
                       type="submit"
                       disabled={isProductSubmitting}
-                      className="px-5 py-2 bg-sky-600 hover:bg-sky-700 text-white font-semibold text-xs rounded-xl flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                      className="px-6 py-2.5 bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors shadow-md"
                     >
                       {isProductSubmitting ? (
                         <>
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          <span>กำลังบันทึก...</span>
+                          <span>กำลังบันทึกลง Supabase...</span>
                         </>
                       ) : (
-                        <span>บันทึกสินค้าลง Supabase</span>
+                        <span>บันทึกข้อมูลสินค้าลง Supabase</span>
                       )}
                     </button>
                   </div>
@@ -1316,12 +1724,33 @@ export const AdminModal: React.FC<AdminModalProps> = ({
 
                           setEditingProductId(p.id);
                           setProductForm({
-                            name: p.name,
-                            price: p.startingMonthlyPrice,
+                            name: p.name || '',
+                            price: p.startingMonthlyPrice || 790,
                             imageUrl: existingImages[0] || '',
                             images: existingImages,
-                            description: p.description,
-                            category: p.category,
+                            description: p.description || '',
+                            category: p.category || 'water',
+                            modelCode: p.modelCode || '',
+                            tagline: p.tagline || '',
+                            subscriptionOptions: p.subscriptionOptions && p.subscriptionOptions.length > 0
+                              ? JSON.parse(JSON.stringify(p.subscriptionOptions))
+                              : [
+                                  { years: 5, monthlyPrice: p.startingMonthlyPrice || 790, label: 'สัญญา 5 ปี (แนะนำ)', badge: 'ยอดนิยม', codyService: 'ดูแลฟรี 5 ปีเต็ม' },
+                                  { years: 7, monthlyPrice: Math.round((p.startingMonthlyPrice || 790) * 0.88), label: 'สัญญา 7 ปี (ผ่อนเบาที่สุด)', badge: 'ผ่อนสบาย', codyService: 'ดูแลฟรี 7 ปีเต็ม' }
+                                ],
+                            highlights: p.highlights && p.highlights.length > 0
+                              ? JSON.parse(JSON.stringify(p.highlights))
+                              : [
+                                  { title: 'RO Membrane กรองบริสุทธิ์', description: 'กรองละเอียดถึง 0.0001 ไมครอน ขจัดโลหะหนักและเชื้อโรค' },
+                                  { title: 'บริการ Cody ถึงบ้านฟรี', description: 'ผู้เชี่ยวชาญเข้าตรวจเช็ก ล้างระบบด้วยชุดเครื่องมือ Care Kit ฆ่าเชื้อทุก 2 เดือน' }
+                                ],
+                            tankCapacity: p.tankCapacity || '',
+                            filtrationSystem: p.filtrationSystem || '',
+                            coverageArea: p.coverageArea || '',
+                            dimensions: p.dimensions || '',
+                            weight: p.weight || '',
+                            powerConsumption: p.powerConsumption || '',
+                            codyCycle: p.codyCycle || '',
                           });
                           setInputImageUrl('');
                           setProductImageStats(null);
@@ -1330,7 +1759,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                         className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-medium flex items-center gap-1 cursor-pointer"
                       >
                         <Edit className="w-3.5 h-3.5" />
-                        <span>แก้ไข</span>
+                        <span>แก้ไขสเปก & ราคา</span>
                       </button>
                       <button
                         onClick={() => handleDeleteProduct(p.id, p.name)}

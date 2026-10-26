@@ -20,18 +20,34 @@ export interface DataFetchResult {
 function mapSupabaseRowToProduct(row: any, index: number): CowayProduct {
   const numericPrice = Number(row.price) || 790;
   
-  // Extract up to 5 images from row.images (array or json string), fallback to image_url / image
-  let imagesList: string[] = [];
-  if (Array.isArray(row.images) && row.images.length > 0) {
-    imagesList = row.images.filter((img: any) => typeof img === 'string' && img.trim().length > 0).slice(0, 5);
-  } else if (typeof row.images === 'string' && row.images.trim()) {
+  // Check and extract embedded specs JSON from description if present
+  let embeddedSpecs: any = null;
+  let cleanDescription = row.description || '';
+  if (typeof row.description === 'string' && row.description.includes('<!-- COWAY_EXTENDED_SPECS:')) {
     try {
-      const parsed = JSON.parse(row.images);
+      const match = row.description.match(/<!-- COWAY_EXTENDED_SPECS:([\s\S]*?) -->/);
+      if (match && match[1]) {
+        embeddedSpecs = JSON.parse(match[1]);
+        cleanDescription = row.description.replace(/<!-- COWAY_EXTENDED_SPECS:[\s\S]*? -->/g, '').trim();
+      }
+    } catch (e) {
+      console.warn('[ProductService] Failed to parse embedded specs:', e);
+    }
+  }
+
+  // Extract up to 5 images from row.images (array or json string) or embeddedSpecs.images, fallback to image_url / image
+  let imagesList: string[] = [];
+  const rawImages = row.images || embeddedSpecs?.images;
+  if (Array.isArray(rawImages) && rawImages.length > 0) {
+    imagesList = rawImages.filter((img: any) => typeof img === 'string' && img.trim().length > 0).slice(0, 5);
+  } else if (typeof rawImages === 'string' && rawImages.trim()) {
+    try {
+      const parsed = JSON.parse(rawImages);
       if (Array.isArray(parsed)) {
         imagesList = parsed.filter((img: any) => typeof img === 'string' && img.trim().length > 0).slice(0, 5);
       }
     } catch {
-      imagesList = [row.images.trim()];
+      imagesList = [rawImages.trim()];
     }
   }
 
@@ -48,7 +64,7 @@ function mapSupabaseRowToProduct(row: any, index: number): CowayProduct {
   return {
     id,
     name,
-    description: row.description || `${name} ผลิตภัณฑ์คุณภาพจาก Coway เพื่อสุขภาพและสุขอนามัยที่ดีของทุกคนในบ้าน`,
+    description: cleanDescription || `${name} ผลิตภัณฑ์คุณภาพจาก Coway เพื่อสุขภาพและสุขอนามัยที่ดีของทุกคนในบ้าน`,
     price: numericPrice,
     image: primaryImage,
     images: imagesList.length > 0 ? imagesList : [primaryImage],
@@ -71,7 +87,7 @@ function mapSupabaseRowToProduct(row: any, index: number): CowayProduct {
     isActive: row.is_active !== false,
 
     // Extended domain specifications with graceful fallbacks
-    modelCode: row.model_code || `CHP-${String(id).padStart(3, '0')}`,
+    modelCode: row.model_code || embeddedSpecs?.model_code || `CHP-${String(id).padStart(3, '0')}`,
     categoryLabel:
       row.category_label ||
       (row.category === 'air'
@@ -81,43 +97,53 @@ function mapSupabaseRowToProduct(row: any, index: number): CowayProduct {
         : row.category === 'mattress'
         ? 'เก้าอี้นวด'
         : 'เครื่องกรองน้ำ'),
-    tagline: row.tagline || 'นวัตกรรมเพื่อสุขภาพ ดื่มน้ำสะอาดสดชื่นทุกวัน',
+    tagline: row.tagline || embeddedSpecs?.tagline || 'นวัตกรรมเพื่อสุขภาพ ดื่มน้ำสะอาดสดชื่นทุกวัน',
     shortDesc:
       row.short_desc ||
-      row.description ||
+      cleanDescription ||
       'นวัตกรรมระบบกรองมาตรฐานระดับโลก ดีไซน์โมเดิร์น พร้อมบริการ Cody ดูแลตลอดสัญญา',
     fullDesc:
       row.full_desc ||
-      row.description ||
+      cleanDescription ||
       `${name} มาพร้อมมาตรฐานระดับสากล ผ่านการรับรอง WQA Gold Seal และระบบกรองบริสุทธิ์เพื่อทุกคนในครอบครัว`,
     startingMonthlyPrice: numericPrice,
     cashPrice: Number(row.cash_price) || (numericPrice > 0 ? numericPrice * 45 : 38900),
-    subscriptionOptions: Array.isArray(row.subscription_options) && row.subscription_options.length > 0
-      ? row.subscription_options
-      : [
-          {
-            years: 5,
-            monthlyPrice: numericPrice,
-            label: 'สัญญา 5 ปี (แนะนำ)',
-            badge: 'ยอดนิยม',
-            codyService: 'ดูแลฟรี 5 ปีเต็ม ทำความสะอาดทุก 2 เดือน เปลี่ยนไส้กรองทุก 4 เดือน',
-          },
-          {
-            years: 7,
-            monthlyPrice: Math.round(numericPrice * 0.88),
-            label: 'สัญญา 7 ปี (ผ่อนเบาที่สุด)',
-            badge: 'ผ่อนสบาย',
-            codyService: 'ดูแลฟรี 7 ปีเต็ม ไม่มีค่าใช้จ่ายแอบแฝง',
-          },
-        ],
-    waterTypes: row.water_types || ['hot', 'cold', 'room'],
-    tankCapacity: row.tank_capacity || '5.8 ลิตร',
-    filtrationSystem: row.filtration_system || 'Coway RO Membrane 6 ขั้นตอน',
-    coverageArea: row.coverage_area,
-    dimensions: row.dimensions || '260 x 505 x 500 มม.',
-    weight: row.weight || '18.0 กก.',
-    powerConsumption: row.power_consumption || 'ความร้อน 300W / ความเย็น 0.7A',
-    codyCycle: row.cody_cycle || 'ทำความสะอาดฆ่าเชื้อถังทุก 2 เดือน / เปลี่ยนไส้กรองทุก 4 เดือน',
+    subscriptionOptions: (() => {
+      const rawSub = row.subscription_options || embeddedSpecs?.subscription_options;
+      if (Array.isArray(rawSub) && rawSub.length > 0) {
+        return rawSub;
+      }
+      if (typeof rawSub === 'string' && rawSub.trim()) {
+        try {
+          const parsed = JSON.parse(rawSub);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        } catch {}
+      }
+      return [
+        {
+          years: 5,
+          monthlyPrice: numericPrice,
+          label: 'สัญญา 5 ปี (แนะนำ)',
+          badge: 'ยอดนิยม',
+          codyService: 'ดูแลฟรี 5 ปีเต็ม ทำความสะอาดทุก 2 เดือน เปลี่ยนไส้กรองทุก 4 เดือน',
+        },
+        {
+          years: 7,
+          monthlyPrice: Math.round(numericPrice * 0.88),
+          label: 'สัญญา 7 ปี (ผ่อนเบาที่สุด)',
+          badge: 'ผ่อนสบาย',
+          codyService: 'ดูแลฟรี 7 ปีเต็ม ไม่มีค่าใช้จ่ายแอบแฝง',
+        },
+      ];
+    })(),
+    waterTypes: row.water_types || embeddedSpecs?.water_types || ['hot', 'cold', 'room'],
+    tankCapacity: row.tank_capacity || row.tankCapacity || embeddedSpecs?.tank_capacity || '5.8 ลิตร',
+    filtrationSystem: row.filtration_system || row.filtrationSystem || embeddedSpecs?.filtration_system || 'Coway RO Membrane 6 ขั้นตอน',
+    coverageArea: row.coverage_area || row.coverageArea || embeddedSpecs?.coverage_area,
+    dimensions: row.dimensions || embeddedSpecs?.dimensions || '260 x 505 x 500 มม.',
+    weight: row.weight || embeddedSpecs?.weight || '18.0 กก.',
+    powerConsumption: row.power_consumption || row.powerConsumption || embeddedSpecs?.power_consumption || 'ความร้อน 300W / ความเย็น 0.7A',
+    codyCycle: row.cody_cycle || row.codyCycle || embeddedSpecs?.cody_cycle || 'ทำความสะอาดฆ่าเชื้อถังทุก 2 เดือน / เปลี่ยนไส้กรองทุก 4 เดือน',
     keyFeatures: Array.isArray(row.features)
       ? row.features
       : [
@@ -125,18 +151,28 @@ function mapSupabaseRowToProduct(row: any, index: number): CowayProduct {
           'บริการ Cody Heart Service ดูแลฟรีตลอดอายุสัญญา',
           'ประหยัดพลังงาน เป็นมิตรต่อสิ่งแวดล้อม',
         ],
-    highlights: Array.isArray(row.highlights) && row.highlights.length > 0
-      ? row.highlights
-      : [
-          {
-            title: 'RO Membrane กรองบริสุทธิ์',
-            description: 'กรองละเอียดถึง 0.0001 ไมครอน ขจัดโลหะหนัก เชื้อไวรัส แบคทีเรีย สารเคมีตกค้างได้อย่างหมดจด',
-          },
-          {
-            title: 'บริการ Cody ถึงบ้านฟรี',
-            description: 'ผู้เชี่ยวชาญเข้าตรวจเช็ก ล้างระบบด้วยชุดเครื่องมือ Care Kit ฆ่าเชื้อทุก 2 เดือน',
-          },
-        ],
+    highlights: (() => {
+      const rawHighlights = row.highlights || embeddedSpecs?.highlights;
+      if (Array.isArray(rawHighlights) && rawHighlights.length > 0) {
+        return rawHighlights;
+      }
+      if (typeof rawHighlights === 'string' && rawHighlights.trim()) {
+        try {
+          const parsed = JSON.parse(rawHighlights);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        } catch {}
+      }
+      return [
+        {
+          title: 'RO Membrane กรองบริสุทธิ์',
+          description: 'กรองละเอียดถึง 0.0001 ไมครอน ขจัดโลหะหนัก เชื้อไวรัส แบคทีเรีย สารเคมีตกค้างได้อย่างหมดจด',
+        },
+        {
+          title: 'บริการ Cody ถึงบ้านฟรี',
+          description: 'ผู้เชี่ยวชาญเข้าตรวจเช็ก ล้างระบบด้วยชุดเครื่องมือ Care Kit ฆ่าเชื้อทุก 2 เดือน',
+        },
+      ];
+    })(),
     isPopular: row.is_popular !== undefined ? Boolean(row.is_popular) : true,
     isNew: Boolean(row.is_new),
     isPromo: Boolean(row.is_promo),

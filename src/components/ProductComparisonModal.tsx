@@ -112,8 +112,8 @@ export const ProductComparisonModal: React.FC<ProductComparisonModalProps> = ({
               <tr>
                 <td className="p-3 font-semibold text-slate-600 bg-slate-50/50">ราคาซื้อสด</td>
                 {products.map((p) => (
-                  <td key={p.id} className="p-3 text-center font-mono text-slate-700">
-                    ฿{p.cashPrice.toLocaleString()}
+                  <td key={p.id} className="p-3 text-center font-medium text-slate-700">
+                    สอบถามเจ้าหน้าที่
                   </td>
                 ))}
               </tr>

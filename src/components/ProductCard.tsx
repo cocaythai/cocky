@@ -148,8 +148,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
             <div className="text-right">
               <div className="text-[11px] text-slate-400">ราคาซื้อสด</div>
-              <div className="text-xs font-mono text-slate-500 tabular-nums">
-                ฿{product.cashPrice.toLocaleString()}
+              <div className="text-xs font-medium text-slate-600">
+                สอบถามเจ้าหน้าที่
               </div>
             </div>
           </div>
