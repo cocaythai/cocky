@@ -141,7 +141,7 @@ export const ProductComparisonModal: React.FC<ProductComparisonModalProps> = ({
                     {p.category === 'air' && (
                       <span className="font-medium text-slate-800">{p.coverageArea}</span>
                     )}
-                    {p.category === 'mattress' && <span>ขนาดเตียงมาตรฐาน</span>}
+                    {p.category === 'massage_chair' && <span>เก้าอี้นวดเพื่อสุขภาพ</span>}
                     {p.category === 'bidet' && <span>ฝารองนั่งชำระล้าง</span>}
                   </td>
                 ))}

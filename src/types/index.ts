@@ -1,4 +1,4 @@
-export type ProductCategoryType = 'water' | 'air' | 'bidet' | 'mattress';
+export type ProductCategoryType = 'water' | 'air' | 'bidet' | 'massage_chair';
 export type ProductCategory = 'all' | ProductCategoryType;
 
 export type WaterType = 'hot' | 'cold' | 'room' | 'ice';

@@ -9,6 +9,7 @@ export interface AdminProductPayload {
   images?: string[]; // Up to 5 product images
   description?: string;
   category?: string;
+  water_types?: string[];
 }
 
 class AdminProductService {
@@ -24,7 +25,7 @@ class AdminProductService {
       const sanitizedImages = (payload.images || [payload.image_url]).slice(0, 5);
       const mainImageUrl = sanitizedImages[0] || payload.image_url;
 
-      // 1. Attempt insert with images array
+      // 1. Attempt insert with images array and water_types
       let insertData: any = {
         name: payload.name,
         price: Number(payload.price) || 0,
@@ -34,16 +35,22 @@ class AdminProductService {
         category: payload.category || 'water',
       };
 
+      if (payload.water_types && payload.water_types.length > 0) {
+        insertData.water_types = payload.water_types;
+      }
+
       let { data, error } = await supabase
         .from('products')
         .insert([insertData])
         .select()
         .single();
 
-      // If 'images' column doesn't exist yet in Supabase table, retry without 'images' column
-      if (error && (error.message.includes('images') || error.code === '42703')) {
-        console.warn('[AdminProductService] Column "images" not found, falling back to image_url only:', error.message);
-        delete insertData.images;
+      // Fallbacks if columns don't exist yet in Supabase table
+      if (error && (error.message.includes('water_types') || error.message.includes('images') || error.code === '42703')) {
+        console.warn('[AdminProductService] Column error on insert, attempting fallback:', error.message);
+        if (error.message.includes('water_types')) delete insertData.water_types;
+        if (error.message.includes('images')) delete insertData.images;
+
         const retryResult = await supabase
           .from('products')
           .insert([insertData])
@@ -91,15 +98,21 @@ class AdminProductService {
         updateData.images = sanitizedImages;
       }
 
+      if (payload.water_types) {
+        updateData.water_types = payload.water_types;
+      }
+
       let { error } = await supabase
         .from('products')
         .update(updateData)
         .eq('id', id);
 
-      // If 'images' column doesn't exist yet, retry without 'images' column
-      if (error && (error.message.includes('images') || error.code === '42703')) {
-        console.warn('[AdminProductService] Column "images" not found during update, falling back to image_url only:', error.message);
-        delete updateData.images;
+      // Fallbacks if columns don't exist yet
+      if (error && (error.message.includes('water_types') || error.message.includes('images') || error.code === '42703')) {
+        console.warn('[AdminProductService] Column error on update, attempting fallback:', error.message);
+        if (error.message.includes('water_types')) delete updateData.water_types;
+        if (error.message.includes('images')) delete updateData.images;
+
         const retryResult = await supabase
           .from('products')
           .update(updateData)

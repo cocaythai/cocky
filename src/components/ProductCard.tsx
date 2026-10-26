@@ -1,6 +1,6 @@
 import React from 'react';
 import { CowayProduct } from '../types';
-import { Droplets, Wind, Sparkles, Bed, Flame, Snowflake, Check, MessageCircle, Eye, Scale } from 'lucide-react';
+import { Droplets, Wind, Sparkles, Armchair, Flame, Snowflake, Check, MessageCircle, Eye, Scale } from 'lucide-react';
 
 interface ProductCardProps {
   product: CowayProduct;
@@ -26,8 +26,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         return <Wind className="w-3.5 h-3.5 text-teal-500" />;
       case 'bidet':
         return <Sparkles className="w-3.5 h-3.5 text-blue-500" />;
-      case 'mattress':
-        return <Bed className="w-3.5 h-3.5 text-indigo-500" />;
+      case 'massage_chair':
+        return <Armchair className="w-3.5 h-3.5 text-purple-500" />;
       default:
         return null;
     }

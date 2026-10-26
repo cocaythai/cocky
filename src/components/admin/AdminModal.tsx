@@ -4,7 +4,7 @@ import { Article } from '../../types/article';
 import { DEFAULT_ARTICLES } from '../../data/defaultArticles';
 import { DEFAULT_KNOWLEDGE_TIPS } from '../../data/defaultKnowledge';
 import { DEFAULT_CUSTOMER_REVIEWS } from '../../data/defaultReviews';
-import { CowayProduct } from '../../types/index.ts';
+import { CowayProduct, WaterType } from '../../types/index.ts';
 import { settingsService } from '../../services/settingsService';
 import { adminProductService } from '../../services/adminProductService';
 import { storageService, STORAGE_BUCKET } from '../../services/storageService';
@@ -98,6 +98,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
     images: [] as string[], // Up to 5 product images
     description: '',
     category: 'water',
+    waterTypes: ['hot', 'cold', 'room'] as WaterType[],
   });
   const [productSearch, setProductSearch] = useState('');
   const [productCategoryFilter, setProductCategoryFilter] = useState('all');
@@ -331,6 +332,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
             images: currentImages,
             description: productForm.description,
             category: productForm.category,
+            water_types: productForm.waterTypes,
           },
           oldImages
         );
@@ -350,11 +352,12 @@ export const AdminModal: React.FC<AdminModalProps> = ({
           images: currentImages,
           description: productForm.description,
           category: productForm.category,
+          water_types: productForm.waterTypes,
         });
         if (res.success) {
           showToast('success', res.message);
           setIsAddingProduct(false);
-          setProductForm({ name: '', price: 790, imageUrl: '', images: [], description: '', category: 'water' });
+          setProductForm({ name: '', price: 790, imageUrl: '', images: [], description: '', category: 'water', waterTypes: ['hot', 'cold', 'room'] });
           onRefreshProducts();
         } else {
           showToast('error', res.message);
@@ -949,7 +952,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                   onClick={() => {
                     setIsAddingProduct(true);
                     setEditingProductId(null);
-                    setProductForm({ name: '', price: 790, imageUrl: '', images: [], description: '', category: 'water' });
+                    setProductForm({ name: '', price: 790, imageUrl: '', images: [], description: '', category: 'water', waterTypes: ['hot', 'cold', 'room'] });
                     setInputImageUrl('');
                     setProductImageStats(null);
                   }}
@@ -981,7 +984,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                   <option value="water">เครื่องกรองน้ำ (Water)</option>
                   <option value="air">เครื่องฟอกอากาศ (Air)</option>
                   <option value="bidet">ฝารองนั่งสุขภัณฑ์ (Bidet)</option>
-                  <option value="mattress">ที่นอน (Mattress)</option>
+                  <option value="massage_chair">เก้าอี้นวด (Massage Chair)</option>
                 </select>
               </div>
 
@@ -1039,9 +1042,61 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                         <option value="water">เครื่องกรองน้ำ (Water)</option>
                         <option value="air">เครื่องฟอกอากาศ (Air)</option>
                         <option value="bidet">ฝารองนั่งสุขภัณฑ์ (Bidet)</option>
-                        <option value="mattress">ที่นอนและเตียง (Mattress)</option>
+                        <option value="massage_chair">เก้าอี้นวด (Massage Chair)</option>
                       </select>
                     </div>
+
+                    {/* Water Temperature Choices for Water Purifiers */}
+                    {productForm.category === 'water' && (
+                      <div className="sm:col-span-2 bg-white p-3.5 rounded-2xl border border-slate-200 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <label className="font-semibold text-slate-800 text-xs flex items-center gap-1.5">
+                            <span>💧 ตัวเลือกอุณหภูมิน้ำ (สำหรับเครื่องกรองน้ำ)</span>
+                            <span className="text-[10px] font-normal text-slate-500">(เลือกได้สูงสุด 4 ตัวเลือก โดยไม่บังคับ)</span>
+                          </label>
+                          <span className="text-[11px] font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded border border-sky-200 font-mono">
+                            {productForm.waterTypes?.length || 0}/4 ตัวเลือก
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                          {[
+                            { id: 'hot', label: '🔥 ร้อน' },
+                            { id: 'cold', label: '❄️ เย็น' },
+                            { id: 'room', label: '💧 ปกติ' },
+                            { id: 'ice', label: '🧊 น้ำแข็ง' },
+                          ].map((opt) => {
+                            const isSelected = productForm.waterTypes?.includes(opt.id as WaterType);
+                            return (
+                              <button
+                                key={opt.id}
+                                type="button"
+                                onClick={() => {
+                                  const current = productForm.waterTypes || [];
+                                  if (isSelected) {
+                                    setProductForm({ ...productForm, waterTypes: current.filter((t) => t !== opt.id) });
+                                  } else {
+                                    if (current.length >= 4) return;
+                                    setProductForm({ ...productForm, waterTypes: [...current, opt.id as WaterType] });
+                                  }
+                                }}
+                                className={`px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between border transition-all cursor-pointer ${
+                                  isSelected
+                                    ? 'bg-sky-600 text-white border-sky-700 shadow-xs'
+                                    : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                                }`}
+                              >
+                                <span>{opt.label}</span>
+                                <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                                  isSelected ? 'bg-white text-sky-600' : 'bg-slate-200 text-slate-400'
+                                }`}>
+                                  {isSelected ? '✓' : ''}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
 
                     <div className="sm:col-span-2 space-y-3">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
@@ -1322,6 +1377,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                             images: existingImages,
                             description: p.description,
                             category: p.category,
+                            waterTypes: p.waterTypes || ['hot', 'cold', 'room'],
                           });
                           setInputImageUrl('');
                           setProductImageStats(null);

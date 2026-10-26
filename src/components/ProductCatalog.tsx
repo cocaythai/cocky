@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { CowayProduct, ProductCategory, WaterType } from '../types';
 import { MOCK_PRODUCTS } from '../data/mockProducts';
 import { ProductCard } from './ProductCard';
-import { Search, Filter, SlidersHorizontal, Scale, X, Droplets, Wind, Sparkles, Bed, Check, Database, RefreshCw, PlusCircle, CheckCircle2, AlertCircle, Eye } from 'lucide-react';
+import { Search, Filter, SlidersHorizontal, Scale, X, Droplets, Wind, Sparkles, Armchair, Check, Database, RefreshCw, PlusCircle, CheckCircle2, AlertCircle, Eye } from 'lucide-react';
 
 interface ProductCatalogProps {
   products: CowayProduct[];
@@ -67,7 +67,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
     { id: 'water', label: 'เครื่องกรองน้ำ', count: activeCatalog.filter(p => p.category === 'water').length, icon: Droplets },
     { id: 'air', label: 'เครื่องฟอกอากาศ', count: activeCatalog.filter(p => p.category === 'air').length, icon: Wind },
     { id: 'bidet', label: 'ฝารองนั่งสุขภัณฑ์', count: activeCatalog.filter(p => p.category === 'bidet').length, icon: Sparkles },
-    { id: 'mattress', label: 'ที่นอนและเตียง', count: activeCatalog.filter(p => p.category === 'mattress').length, icon: Bed },
+    { id: 'massage_chair', label: 'เก้าอี้นวด', count: activeCatalog.filter(p => p.category === 'massage_chair').length, icon: Armchair },
   ];
 
   const filteredProducts = useMemo(() => {
