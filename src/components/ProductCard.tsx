@@ -1,6 +1,6 @@
 import React from 'react';
 import { CowayProduct } from '../types';
-import { Droplets, Wind, Sparkles, Armchair, Flame, Snowflake, Check, MessageCircle, Eye, Scale } from 'lucide-react';
+import { Droplets, Wind, Sparkles, Armchair, Check, MessageCircle, Eye, Scale } from 'lucide-react';
 
 interface ProductCardProps {
   product: CowayProduct;
@@ -92,31 +92,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           </button>
         )}
 
-        {/* Water temperature indicators if water category */}
-        {product.waterTypes && (
-          <div className="absolute bottom-3 left-3 flex items-center gap-1.5 bg-white/90 backdrop-blur-xs px-2 py-1 rounded-md text-[11px] font-medium text-slate-700 border border-slate-200/60 shadow-xs">
-            {product.waterTypes.includes('hot') && (
-              <span className="flex items-center gap-0.5 text-rose-600" title="น้ำร้อน">
-                <Flame className="w-3 h-3" /> ร้อน
-              </span>
-            )}
-            {product.waterTypes.includes('cold') && (
-              <span className="flex items-center gap-0.5 text-sky-600" title="น้ำเย็น">
-                <Snowflake className="w-3 h-3" /> เย็น
-              </span>
-            )}
-            {product.waterTypes.includes('room') && (
-              <span className="flex items-center gap-0.5 text-slate-600" title="น้ำอุณหภูมิห้อง">
-                <Droplets className="w-3 h-3" /> ปกติ
-              </span>
-            )}
-            {product.waterTypes.includes('ice') && (
-              <span className="flex items-center gap-0.5 text-cyan-600 font-semibold" title="น้ำแข็งบริสุทธิ์">
-                🧊 น้ำแข็ง
-              </span>
-            )}
-          </div>
-        )}
       </div>
 
       {/* Card Content */}

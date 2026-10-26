@@ -951,7 +951,7 @@ export const MOCK_PRODUCTS: CowayProduct[] = [
     description: 'Coway Prime Hybrid Mattress ยกระดับการนอนหลับเพื่อสุขภาพ ด้วยโครงสร้าง 7 โซน สปริง Pocket Springs แยกอิสระไม่รบกวนคนข้างกาย ผสานเมมโมรี่โฟมและยางพาราแท้ ให้ความนุ่มแน่นกำลังดี ไฮไลท์พิเศษคือบริการ Homecare Service เข้าทำความสะอาดฆ่าเชื้อไรฝุ่นที่นอนฟรี 7 ขั้นตอนทุก 4 เดือน และเปลี่ยนท็อปเปอร์ชิ้นบนให้ใหม่ฟรี!',
     price: 1290,
     image: imgNeoPlus,
-    category: 'mattress',
+    category: 'massage_chair',
     features: [
       'Pocket Spring 7 โซน รองรับน้ำหนักร่างกายตามหลักสรีรศาสตร์',
       'ชั้น Memory Foam & Natural Latex นุ่มสบาย ไม่ปวดหลัง',
@@ -1012,7 +1012,7 @@ export const MOCK_PRODUCTS: CowayProduct[] = [
     description: 'ที่นอน Coway Prime Hybrid ขนาดควีนไซส์ 5 ฟุต สำหรับห้องนอนขนาดกะทัดรัดแต่ต้องการคุณภาพการนอนสูงสุด รองรับแนวกระดูกสันหลังได้อย่างสมบูรณ์แบบ พร้อมการดูแลสุขภาพการนอนต่อเนื่องตลอดอายุสัญญา',
     price: 1190,
     image: imgNeoPlus,
-    category: 'mattress',
+    category: 'massage_chair',
     features: [
       'Pocket Spring 7 โซน ลดแรงสั่นสะเทือนเวลาพลิกตัว',
       'ระบายความร้อนได้ดี หลับสบายตลอดทั้งคืน',
