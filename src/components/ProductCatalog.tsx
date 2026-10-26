@@ -67,7 +67,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
     { id: 'water', label: 'เครื่องกรองน้ำ', count: activeCatalog.filter(p => p.category === 'water').length, icon: Droplets },
     { id: 'air', label: 'เครื่องฟอกอากาศ', count: activeCatalog.filter(p => p.category === 'air').length, icon: Wind },
     { id: 'bidet', label: 'ฝารองนั่งสุขภัณฑ์', count: activeCatalog.filter(p => p.category === 'bidet').length, icon: Sparkles },
-    { id: 'mattress', label: 'ที่นอนและเตียง', count: activeCatalog.filter(p => p.category === 'mattress').length, icon: Bed },
+    { id: 'mattress', label: 'เก้าอี้นวด', count: activeCatalog.filter(p => p.category === 'mattress').length, icon: Bed },
   ];
 
   const filteredProducts = useMemo(() => {

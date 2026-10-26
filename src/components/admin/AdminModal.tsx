@@ -981,7 +981,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                   <option value="water">เครื่องกรองน้ำ (Water)</option>
                   <option value="air">เครื่องฟอกอากาศ (Air)</option>
                   <option value="bidet">ฝารองนั่งสุขภัณฑ์ (Bidet)</option>
-                  <option value="mattress">ที่นอน (Mattress)</option>
+                  <option value="mattress">เก้าอี้นวด (Massage Chair)</option>
                 </select>
               </div>
 
@@ -1039,7 +1039,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                         <option value="water">เครื่องกรองน้ำ (Water)</option>
                         <option value="air">เครื่องฟอกอากาศ (Air)</option>
                         <option value="bidet">ฝารองนั่งสุขภัณฑ์ (Bidet)</option>
-                        <option value="mattress">ที่นอนและเตียง (Mattress)</option>
+                        <option value="mattress">เก้าอี้นวด (Massage Chair)</option>
                       </select>
                     </div>
 

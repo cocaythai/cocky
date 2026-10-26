@@ -79,7 +79,7 @@ function mapSupabaseRowToProduct(row: any, index: number): CowayProduct {
         : row.category === 'bidet'
         ? 'ฝารองนั่งสุขภัณฑ์'
         : row.category === 'mattress'
-        ? 'ที่นอนและเตียง'
+        ? 'เก้าอี้นวด'
         : 'เครื่องกรองน้ำ'),
     tagline: row.tagline || 'นวัตกรรมเพื่อสุขภาพ ดื่มน้ำสะอาดสดชื่นทุกวัน',
     shortDesc:
