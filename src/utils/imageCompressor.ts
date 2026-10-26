@@ -57,11 +57,9 @@ export async function compressImage(
           return;
         }
 
-        // Optional: Fill white background for transparent PNG converted to JPEG
-        if (mimeType === 'image/jpeg') {
-          ctx.fillStyle = '#FFFFFF';
-          ctx.fillRect(0, 0, width, height);
-        }
+        // Fill solid white background for transparent images (e.g., transparent PNGs)
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, width, height);
 
         ctx.drawImage(img, 0, 0, width, height);
 
