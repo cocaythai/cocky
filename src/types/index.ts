@@ -57,6 +57,7 @@ export interface CowayProduct {
   promoText?: string;
   rating: number;
   reviewCount: number;
+  order?: number;
   createdAt?: string;
   updatedAt?: string;
 }

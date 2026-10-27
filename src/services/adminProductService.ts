@@ -22,6 +22,7 @@ export interface AdminProductPayload {
   weight?: string;
   power_consumption?: string;
   cody_cycle?: string;
+  display_order?: number;
 }
 
 class AdminProductService {
@@ -274,6 +275,74 @@ class AdminProductService {
       return { success: false, message: `อัปเดตไม่สำเร็จ: ${lastError?.message || 'เกิดข้อผิดพลาดในการบันทึกข้อมูล'}` };
     } catch (err: any) {
       return { success: false, message: `เกิดข้อผิดพลาด: ${err.message}` };
+    }
+  }
+
+  /**
+   * Update order/sequence of multiple products in Supabase
+   */
+  async updateProductsOrder(
+    orderedItems: { id: string; order: number; description?: string }[]
+  ): Promise<{ success: boolean; message: string }> {
+    if (!isSupabaseConfigured() || !supabase) {
+      return { success: false, message: 'Supabase is not configured' };
+    }
+
+    const client = supabase;
+
+    try {
+      const updatePromises = orderedItems.map(async (item) => {
+        let updateData: any = { display_order: item.order };
+
+        if (item.description !== undefined) {
+          const baseDesc = (item.description || '').replace(/<!-- COWAY_EXTENDED_SPECS:[\s\S]*? -->/g, '').trim();
+          let extendedSpecsObj: any = {};
+          const match = (item.description || '').match(/<!-- COWAY_EXTENDED_SPECS:([\s\S]*?) -->/);
+          if (match && match[1]) {
+            try {
+              extendedSpecsObj = JSON.parse(match[1]);
+            } catch {}
+          }
+          extendedSpecsObj.display_order = item.order;
+          extendedSpecsObj.order = item.order;
+          updateData.description = `${baseDesc}\n\n<!-- COWAY_EXTENDED_SPECS:${JSON.stringify(extendedSpecsObj)} -->`;
+        }
+
+        let { error } = await client
+          .from('products')
+          .update(updateData)
+          .eq('id', item.id);
+
+        if (error && error.message.includes('column')) {
+          delete updateData.display_order;
+          if (Object.keys(updateData).length > 0) {
+            const retryRes = await client
+              .from('products')
+              .update(updateData)
+              .eq('id', item.id);
+            error = retryRes.error;
+          }
+        }
+
+        if (error) {
+          console.warn(`[AdminProductService] Failed to update order for product ${item.id}:`, error.message);
+        }
+        return !error;
+      });
+
+      const results = await Promise.all(updatePromises);
+      const successCount = results.filter(Boolean).length;
+
+      if (successCount === orderedItems.length) {
+        return { success: true, message: 'บันทึกลำดับสินค้าลง Supabase สำเร็จเรียบร้อยแล้ว!' };
+      } else {
+        return {
+          success: true,
+          message: `บันทึกลำดับสินค้าสำเร็จ (${successCount}/${orderedItems.length} รายการ)`,
+        };
+      }
+    } catch (err: any) {
+      return { success: false, message: `เกิดข้อผิดพลาดในการบันทึกลำดับสินค้า: ${err.message}` };
     }
   }
 

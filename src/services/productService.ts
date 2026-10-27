@@ -58,6 +58,16 @@ function mapSupabaseRowToProduct(row: any, index: number): CowayProduct {
     imagesList = [primaryImage];
   }
 
+  const displayOrder = typeof row.display_order === 'number'
+    ? row.display_order
+    : typeof row.order === 'number'
+    ? row.order
+    : typeof embeddedSpecs?.display_order === 'number'
+    ? embeddedSpecs.display_order
+    : typeof embeddedSpecs?.order === 'number'
+    ? embeddedSpecs.order
+    : index + 1;
+
   const name = row.name || `Coway Product ${index + 1}`;
   const id = String(row.id || `sp-${index + 1}`);
 
@@ -179,6 +189,7 @@ function mapSupabaseRowToProduct(row: any, index: number): CowayProduct {
     promoText: row.promo_text || 'ฟรีค่าติดตั้ง + บริการ Cody ดูแลตลอดสัญญา',
     rating: Number(row.rating) || 4.9,
     reviewCount: Number(row.review_count) || 120,
+    order: displayOrder,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -414,6 +425,14 @@ class ProductService {
       results = results.filter(
         (p) => p.waterTypes && p.waterTypes.includes(params.waterType as any)
       );
+    }
+
+    if (params?.sortBy === 'price-asc') {
+      results.sort((a, b) => a.price - b.price);
+    } else if (params?.sortBy === 'price-desc') {
+      results.sort((a, b) => b.price - a.price);
+    } else {
+      results.sort((a, b) => (a.order ?? 9999) - (b.order ?? 9999));
     }
 
     return results;

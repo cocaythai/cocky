@@ -120,6 +120,57 @@ export const AdminModal: React.FC<AdminModalProps> = ({
   const [inputImageUrl, setInputImageUrl] = useState('');
   const [logoUploading, setLogoUploading] = useState(false);
 
+  // Product Ordering State
+  const [orderedProducts, setOrderedProducts] = useState<CowayProduct[]>([]);
+  const [isOrderSaving, setIsOrderSaving] = useState(false);
+  const [hasOrderChanged, setHasOrderChanged] = useState(false);
+
+  // Sync orderedProducts whenever products prop updates
+  React.useEffect(() => {
+    if (products && products.length > 0) {
+      const sorted = [...products].sort((a, b) => (a.order ?? 9999) - (b.order ?? 9999));
+      setOrderedProducts(sorted);
+      setHasOrderChanged(false);
+    }
+  }, [products]);
+
+  const handleMoveProduct = (index: number, direction: 'up' | 'down') => {
+    const targetIdx = direction === 'up' ? index - 1 : index + 1;
+    if (targetIdx < 0 || targetIdx >= orderedProducts.length) return;
+
+    const newOrdered = [...orderedProducts];
+    const temp = newOrdered[index];
+    newOrdered[index] = newOrdered[targetIdx];
+    newOrdered[targetIdx] = temp;
+
+    const resequenced = newOrdered.map((p, i) => ({ ...p, order: i + 1 }));
+    setOrderedProducts(resequenced);
+    setHasOrderChanged(true);
+  };
+
+  const handleSaveProductOrder = async () => {
+    setIsOrderSaving(true);
+    try {
+      const payload = orderedProducts.map((p, idx) => ({
+        id: p.id,
+        order: idx + 1,
+        description: p.description,
+      }));
+      const res = await adminProductService.updateProductsOrder(payload);
+      if (res.success) {
+        showToast('success', res.message);
+        setHasOrderChanged(false);
+        onRefreshProducts();
+      } else {
+        showToast('error', res.message);
+      }
+    } catch (err: any) {
+      showToast('error', err.message || 'เกิดข้อผิดพลาดในการบันทึกลำดับสินค้า');
+    } finally {
+      setIsOrderSaving(false);
+    }
+  };
+
   // Article Management State
   const [isAddingArticle, setIsAddingArticle] = useState(false);
   const [editingArticleId, setEditingArticleId] = useState<string | null>(null);
@@ -389,6 +440,9 @@ export const AdminModal: React.FC<AdminModalProps> = ({
 
     setIsProductSubmitting(true);
     try {
+      const existingProd = products.find((p) => p.id === editingProductId);
+      const currentOrder = existingProd?.order || (products.length + 1);
+
       const payload: AdminProductPayload = {
         name: productForm.name,
         price: Number(productForm.price),
@@ -407,6 +461,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
         weight: productForm.weight,
         power_consumption: productForm.powerConsumption,
         cody_cycle: productForm.codyCycle,
+        display_order: currentOrder,
       };
 
       if (editingProductId) {
@@ -1036,50 +1091,94 @@ export const AdminModal: React.FC<AdminModalProps> = ({
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <h3 className="font-bold text-slate-900 text-base sm:text-lg">
-                    จัดการสินค้า (Product Management)
+                    จัดการสินค้าและจัดเรียงลำดับ (Product Management & Reordering)
                   </h3>
                   <p className="text-xs text-slate-500">
-                    เพิ่ม แก้ไข ลบ และเปลี่ยนรูปสินค้า โดยข้อมูลเชื่อมต่อกับตาราง `products` จริง
+                    เพิ่ม แก้ไข ลบ เปลี่ยนรูป และกดปุ่มขึ้น-ลงเพื่อจัดเรียงลำดับการแสดงผลสินค้าบนหน้าเว็บ
                   </p>
                 </div>
-                <button
-                  onClick={() => {
-                    setIsAddingProduct(true);
-                    setEditingProductId(null);
-                    setProductForm({
-                      name: '',
-                      price: 790,
-                      imageUrl: '',
-                      images: [],
-                      description: '',
-                      category: 'water',
-                      modelCode: '',
-                      tagline: '',
-                      subscriptionOptions: [
-                        { years: 5, monthlyPrice: 790, label: 'สัญญา 5 ปี (แนะนำ)', badge: 'ยอดนิยม', codyService: 'ดูแลฟรี 5 ปีเต็ม ทำความสะอาดทุก 2 เดือน เปลี่ยนไส้กรองทุก 4 เดือน' },
-                        { years: 7, monthlyPrice: 690, label: 'สัญญา 7 ปี (ผ่อนเบาที่สุด)', badge: 'ผ่อนสบาย', codyService: 'ดูแลฟรี 7 ปีเต็ม ไม่มีค่าใช้จ่ายแอบแฝง' }
-                      ],
-                      highlights: [
-                        { title: 'RO Membrane กรองบริสุทธิ์', description: 'กรองละเอียดถึง 0.0001 ไมครอน ขจัดโลหะหนักและเชื้อโรคได้อย่างหมดจด' },
-                        { title: 'บริการ Cody ถึงบ้านฟรี', description: 'ผู้เชี่ยวชาญเข้าตรวจเช็ก ล้างระบบฆ่าเชื้อทุก 2 เดือน เปลี่ยนไส้กรองทุก 4 เดือน' }
-                      ],
-                      tankCapacity: '5.8 ลิตร',
-                      filtrationSystem: 'Coway RO Membrane 6 ขั้นตอน',
-                      coverageArea: '',
-                      dimensions: '260 x 505 x 500 มม.',
-                      weight: '18.0 กก.',
-                      powerConsumption: 'ความร้อน 300W / ความเย็น 0.7A',
-                      codyCycle: 'ทำความสะอาดฆ่าเชื้อถังทุก 2 เดือน / เปลี่ยนไส้กรองทุก 4 เดือน',
-                    });
-                    setInputImageUrl('');
-                    setProductImageStats(null);
-                  }}
-                  className="px-4 py-2.5 bg-slate-900 hover:bg-sky-600 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shrink-0 shadow-md"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>เพิ่มสินค้าใหม่</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleSaveProductOrder}
+                    disabled={isOrderSaving}
+                    className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-md shrink-0 ${
+                      hasOrderChanged
+                        ? 'bg-amber-600 hover:bg-amber-700 text-white animate-pulse'
+                        : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                    }`}
+                  >
+                    {isOrderSaving ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>กำลังบันทึกลำดับ...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4" />
+                        <span>{hasOrderChanged ? 'บันทึกลำดับสินค้า *' : 'บันทึกลำดับสินค้า'}</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setIsAddingProduct(true);
+                      setEditingProductId(null);
+                      setProductForm({
+                        name: '',
+                        price: 790,
+                        imageUrl: '',
+                        images: [],
+                        description: '',
+                        category: 'water',
+                        modelCode: '',
+                        tagline: '',
+                        subscriptionOptions: [
+                          { years: 5, monthlyPrice: 790, label: 'สัญญา 5 ปี (แนะนำ)', badge: 'ยอดนิยม', codyService: 'ดูแลฟรี 5 ปีเต็ม ทำความสะอาดทุก 2 เดือน เปลี่ยนไส้กรองทุก 4 เดือน' },
+                          { years: 7, monthlyPrice: 690, label: 'สัญญา 7 ปี (ผ่อนเบาที่สุด)', badge: 'ผ่อนสบาย', codyService: 'ดูแลฟรี 7 ปีเต็ม ไม่มีค่าใช้จ่ายแอบแฝง' }
+                        ],
+                        highlights: [
+                          { title: 'RO Membrane กรองบริสุทธิ์', description: 'กรองละเอียดถึง 0.0001 ไมครอน ขจัดโลหะหนักและเชื้อโรคได้อย่างหมดจด' },
+                          { title: 'บริการ Cody ถึงบ้านฟรี', description: 'ผู้เชี่ยวชาญเข้าตรวจเช็ก ล้างระบบฆ่าเชื้อทุก 2 เดือน เปลี่ยนไส้กรองทุก 4 เดือน' }
+                        ],
+                        tankCapacity: '5.8 ลิตร',
+                        filtrationSystem: 'Coway RO Membrane 6 ขั้นตอน',
+                        coverageArea: '',
+                        dimensions: '260 x 505 x 500 มม.',
+                        weight: '18.0 กก.',
+                        powerConsumption: 'ความร้อน 300W / ความเย็น 0.7A',
+                        codyCycle: 'ทำความสะอาดฆ่าเชื้อถังทุก 2 เดือน / เปลี่ยนไส้กรองทุก 4 เดือน',
+                      });
+                      setInputImageUrl('');
+                      setProductImageStats(null);
+                    }}
+                    className="px-4 py-2.5 bg-slate-900 hover:bg-sky-600 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shrink-0 shadow-md"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>เพิ่มสินค้าใหม่</span>
+                  </button>
+                </div>
               </div>
+
+              {/* Order Changed Alert Banner */}
+              {hasOrderChanged && (
+                <div className="p-3 bg-amber-50 border border-amber-300 text-amber-900 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs font-semibold animate-in fade-in">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>ลำดับการแสดงผลเปลี่ยนไปแล้ว อย่าลืมกดปุ่ม "บันทึกลำดับสินค้า" เพื่อบันทึกลง Supabase Database</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleSaveProductOrder}
+                    disabled={isOrderSaving}
+                    className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl flex items-center gap-1.5 cursor-pointer shrink-0"
+                  >
+                    {isOrderSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                    <span>บันทึกลำดับทันที</span>
+                  </button>
+                </div>
+              )}
 
               {/* Product Search & Filter Bar */}
               <div className="flex flex-col sm:flex-row gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-200">
@@ -1690,87 +1789,140 @@ export const AdminModal: React.FC<AdminModalProps> = ({
 
               {/* Product List */}
               <div className="space-y-3">
-                {filteredProducts.map((p) => (
-                  <div
-                    key={p.id}
-                    className="p-3.5 sm:p-4 bg-white rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs hover:border-slate-300 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-14 h-14 bg-slate-50 rounded-xl overflow-hidden shrink-0 border border-slate-100 p-1 flex items-center justify-center">
-                        <img src={p.image} alt={p.name} className="max-h-full max-w-full object-contain" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-slate-900 text-sm">{p.name}</span>
-                          <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-medium">
-                            ID: {p.id}
-                          </span>
-                          <span className="text-[10px] bg-sky-50 text-sky-700 border border-sky-200 px-1.5 py-0.5 rounded font-medium">
-                            📷 {p.images?.length || 1} รูป
-                          </span>
-                        </div>
-                        <div className="text-xs text-slate-500 mt-0.5">
-                          เริ่มต้น <span className="font-bold text-sky-600">฿{p.startingMonthlyPrice.toLocaleString()}</span> / เดือน · หมวดหมู่: {p.categoryLabel}
-                        </div>
-                      </div>
-                    </div>
+                {(() => {
+                  const filteredList = orderedProducts.filter((p) => {
+                    const matchesSearch = p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+                                          p.modelCode.toLowerCase().includes(productSearch.toLowerCase());
+                    const matchesCategory = productCategoryFilter === 'all' || p.category === productCategoryFilter;
+                    return matchesSearch && matchesCategory;
+                  });
 
-                    <div className="flex items-center gap-2 self-end sm:self-center border-t sm:border-t-0 pt-2 sm:pt-0">
-                      <button
-                        onClick={() => {
-                          const existingImages = (p.images && p.images.length > 0)
-                            ? [...p.images]
-                            : (p.image ? [p.image] : []);
+                  if (filteredList.length === 0) {
+                    return (
+                      <div className="p-8 text-center bg-slate-50 rounded-2xl border border-slate-200 text-slate-500 text-xs">
+                        ไม่พบรายการสินค้าที่ตรงกับเงื่อนไขการค้นหา
+                      </div>
+                    );
+                  }
 
-                          setEditingProductId(p.id);
-                          setProductForm({
-                            name: p.name || '',
-                            price: p.startingMonthlyPrice || 790,
-                            imageUrl: existingImages[0] || '',
-                            images: existingImages,
-                            description: p.description || '',
-                            category: p.category || 'water',
-                            modelCode: p.modelCode || '',
-                            tagline: p.tagline || '',
-                            subscriptionOptions: p.subscriptionOptions && p.subscriptionOptions.length > 0
-                              ? JSON.parse(JSON.stringify(p.subscriptionOptions))
-                              : [
-                                  { years: 5, monthlyPrice: p.startingMonthlyPrice || 790, label: 'สัญญา 5 ปี (แนะนำ)', badge: 'ยอดนิยม', codyService: 'ดูแลฟรี 5 ปีเต็ม' },
-                                  { years: 7, monthlyPrice: Math.round((p.startingMonthlyPrice || 790) * 0.88), label: 'สัญญา 7 ปี (ผ่อนเบาที่สุด)', badge: 'ผ่อนสบาย', codyService: 'ดูแลฟรี 7 ปีเต็ม' }
-                                ],
-                            highlights: p.highlights && p.highlights.length > 0
-                              ? JSON.parse(JSON.stringify(p.highlights))
-                              : [
-                                  { title: 'RO Membrane กรองบริสุทธิ์', description: 'กรองละเอียดถึง 0.0001 ไมครอน ขจัดโลหะหนักและเชื้อโรค' },
-                                  { title: 'บริการ Cody ถึงบ้านฟรี', description: 'ผู้เชี่ยวชาญเข้าตรวจเช็ก ล้างระบบด้วยชุดเครื่องมือ Care Kit ฆ่าเชื้อทุก 2 เดือน' }
-                                ],
-                            tankCapacity: p.tankCapacity || '',
-                            filtrationSystem: p.filtrationSystem || '',
-                            coverageArea: p.coverageArea || '',
-                            dimensions: p.dimensions || '',
-                            weight: p.weight || '',
-                            powerConsumption: p.powerConsumption || '',
-                            codyCycle: p.codyCycle || '',
-                          });
-                          setInputImageUrl('');
-                          setProductImageStats(null);
-                          setIsAddingProduct(true);
-                        }}
-                        className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-medium flex items-center gap-1 cursor-pointer"
+                  return filteredList.map((p) => {
+                    const realIdx = orderedProducts.findIndex((item) => item.id === p.id);
+                    const isFirst = realIdx === 0;
+                    const isLast = realIdx === orderedProducts.length - 1;
+
+                    return (
+                      <div
+                        key={p.id}
+                        className="p-3.5 sm:p-4 bg-white rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs hover:border-slate-300 transition-colors"
                       >
-                        <Edit className="w-3.5 h-3.5" />
-                        <span>แก้ไขสเปก & ราคา</span>
-                      </button>
-                      <button
-                        onClick={() => handleDeleteProduct(p.id, p.name)}
-                        className="p-2 rounded-xl text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors cursor-pointer"
-                        title="ลบสินค้านี้"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                        <div className="flex items-center gap-3">
+                          {/* Reorder Up/Down Buttons */}
+                          <div className="flex flex-col gap-1 shrink-0">
+                            <button
+                              type="button"
+                              disabled={isFirst || isOrderSaving}
+                              onClick={() => handleMoveProduct(realIdx, 'up')}
+                              className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-sky-500 hover:text-white text-slate-700 disabled:opacity-20 disabled:cursor-not-allowed flex items-center justify-center transition-colors cursor-pointer"
+                              title="ย้ายลำดับขึ้น (Move Up)"
+                            >
+                              <ArrowUp className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              disabled={isLast || isOrderSaving}
+                              onClick={() => handleMoveProduct(realIdx, 'down')}
+                              className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-sky-500 hover:text-white text-slate-700 disabled:opacity-20 disabled:cursor-not-allowed flex items-center justify-center transition-colors cursor-pointer"
+                              title="ย้ายลำดับลง (Move Down)"
+                            >
+                              <ArrowDown className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+
+                          {/* Position Badge */}
+                          <div
+                            className="w-9 h-9 rounded-xl bg-slate-900 text-white font-mono font-bold text-xs flex items-center justify-center shrink-0 shadow-2xs"
+                            title={`ลำดับการแสดงผลที่ ${realIdx + 1}`}
+                          >
+                            #{realIdx + 1}
+                          </div>
+
+                          <div className="w-14 h-14 bg-slate-50 rounded-xl overflow-hidden shrink-0 border border-slate-100 p-1 flex items-center justify-center">
+                            <img src={p.image} alt={p.name} className="max-h-full max-w-full object-contain" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-slate-900 text-sm">{p.name}</span>
+                              <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-medium">
+                                ID: {p.id}
+                              </span>
+                              <span className="text-[10px] bg-sky-50 text-sky-700 border border-sky-200 px-1.5 py-0.5 rounded font-medium">
+                                📷 {p.images?.length || 1} รูป
+                              </span>
+                            </div>
+                            <div className="text-xs text-slate-500 mt-0.5">
+                              เริ่มต้น <span className="font-bold text-sky-600">฿{p.startingMonthlyPrice.toLocaleString()}</span> / เดือน · หมวดหมู่: {p.categoryLabel}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 self-end sm:self-center border-t sm:border-t-0 pt-2 sm:pt-0">
+                          <button
+                            onClick={() => {
+                              const existingImages = (p.images && p.images.length > 0)
+                                ? [...p.images]
+                                : (p.image ? [p.image] : []);
+
+                              setEditingProductId(p.id);
+                              setProductForm({
+                                name: p.name || '',
+                                price: p.startingMonthlyPrice || 790,
+                                imageUrl: existingImages[0] || '',
+                                images: existingImages,
+                                description: p.description || '',
+                                category: p.category || 'water',
+                                modelCode: p.modelCode || '',
+                                tagline: p.tagline || '',
+                                subscriptionOptions: p.subscriptionOptions && p.subscriptionOptions.length > 0
+                                  ? JSON.parse(JSON.stringify(p.subscriptionOptions))
+                                  : [
+                                      { years: 5, monthlyPrice: p.startingMonthlyPrice || 790, label: 'สัญญา 5 ปี (แนะนำ)', badge: 'ยอดนิยม', codyService: 'ดูแลฟรี 5 ปีเต็ม' },
+                                      { years: 7, monthlyPrice: Math.round((p.startingMonthlyPrice || 790) * 0.88), label: 'สัญญา 7 ปี (ผ่อนเบาที่สุด)', badge: 'ผ่อนสบาย', codyService: 'ดูแลฟรี 7 ปีเต็ม' }
+                                    ],
+                                highlights: p.highlights && p.highlights.length > 0
+                                  ? JSON.parse(JSON.stringify(p.highlights))
+                                  : [
+                                      { title: 'RO Membrane กรองบริสุทธิ์', description: 'กรองละเอียดถึง 0.0001 ไมครอน ขจัดโลหะหนักและเชื้อโรค' },
+                                      { title: 'บริการ Cody ถึงบ้านฟรี', description: 'ผู้เชี่ยวชาญเข้าตรวจเช็ก ล้างระบบด้วยชุดเครื่องมือ Care Kit ฆ่าเชื้อทุก 2 เดือน' }
+                                    ],
+                                tankCapacity: p.tankCapacity || '',
+                                filtrationSystem: p.filtrationSystem || '',
+                                coverageArea: p.coverageArea || '',
+                                dimensions: p.dimensions || '',
+                                weight: p.weight || '',
+                                powerConsumption: p.powerConsumption || '',
+                                codyCycle: p.codyCycle || '',
+                              });
+                              setInputImageUrl('');
+                              setProductImageStats(null);
+                              setIsAddingProduct(true);
+                            }}
+                            className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-medium flex items-center gap-1 cursor-pointer"
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                            <span>แก้ไขสเปก & ราคา</span>
+                          </button>
+                          <button
+                            onClick={() => handleDeleteProduct(p.id, p.name)}
+                            className="p-2 rounded-xl text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors cursor-pointer"
+                            title="ลบสินค้านี้"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
               </div>
             </div>
           )}
