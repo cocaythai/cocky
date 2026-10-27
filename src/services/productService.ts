@@ -75,6 +75,7 @@ function mapSupabaseRowToProduct(row: any, index: number): CowayProduct {
     id,
     name,
     description: cleanDescription || `${name} ผลิตภัณฑ์คุณภาพจาก Coway เพื่อสุขภาพและสุขอนามัยที่ดีของทุกคนในบ้าน`,
+    rawDescription: row.description || '',
     price: numericPrice,
     image: primaryImage,
     images: imagesList.length > 0 ? imagesList : [primaryImage],
@@ -157,8 +158,13 @@ function mapSupabaseRowToProduct(row: any, index: number): CowayProduct {
       if (typeof rawSub === 'string' && rawSub.trim()) {
         try { rawSub = JSON.parse(rawSub); } catch {}
       }
-      if (Array.isArray(rawSub) && rawSub.length > 0 && typeof rawSub[0].monthlyPrice === 'number') {
-        return rawSub[0].monthlyPrice;
+      if (Array.isArray(rawSub) && rawSub.length > 0) {
+        const prices = rawSub
+          .map((opt: any) => Number(opt.monthlyPrice))
+          .filter((p: number) => !isNaN(p) && p > 0);
+        if (prices.length > 0) {
+          return Math.min(...prices);
+        }
       }
       return numericPrice;
     })(),

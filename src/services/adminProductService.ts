@@ -41,7 +41,7 @@ class AdminProductService {
       // Clean base description text
       const baseDesc = (payload.description || '').replace(/<!-- COWAY_EXTENDED_SPECS:[\s\S]*? -->/g, '').trim();
 
-      // Extended metadata object to ensure persistence in 'description' column if extended columns don't exist in Supabase
+      // Extended metadata object stored safely in 'description' column
       const extendedSpecsObj: Record<string, any> = {};
       if (sanitizedImages.length > 0) extendedSpecsObj.images = sanitizedImages;
       if (payload.water_types) extendedSpecsObj.water_types = payload.water_types;
@@ -56,89 +56,34 @@ class AdminProductService {
       if (payload.cody_cycle !== undefined) extendedSpecsObj.cody_cycle = payload.cody_cycle;
       if (payload.model_code !== undefined) extendedSpecsObj.model_code = payload.model_code;
       if (payload.tagline !== undefined) extendedSpecsObj.tagline = payload.tagline;
+      if (payload.display_order !== undefined) {
+        extendedSpecsObj.display_order = payload.display_order;
+        extendedSpecsObj.order = payload.display_order;
+      }
 
       const descriptionWithSpecs = Object.keys(extendedSpecsObj).length > 0
         ? `${baseDesc}\n\n<!-- COWAY_EXTENDED_SPECS:${JSON.stringify(extendedSpecsObj)} -->`
         : baseDesc;
 
-      let insertData: any = {
+      const insertData: any = {
         name: payload.name,
         price: Number(payload.price) || 0,
         image_url: mainImageUrl,
-        images: sanitizedImages,
         description: descriptionWithSpecs,
         category: payload.category || 'water',
       };
 
-      if (payload.water_types && payload.water_types.length > 0) insertData.water_types = payload.water_types;
-      if (payload.subscription_options) insertData.subscription_options = payload.subscription_options;
-      if (payload.highlights) insertData.highlights = payload.highlights;
-      if (payload.tank_capacity !== undefined) insertData.tank_capacity = payload.tank_capacity;
-      if (payload.filtration_system !== undefined) insertData.filtration_system = payload.filtration_system;
-      if (payload.coverage_area !== undefined) insertData.coverage_area = payload.coverage_area;
-      if (payload.dimensions !== undefined) insertData.dimensions = payload.dimensions;
-      if (payload.weight !== undefined) insertData.weight = payload.weight;
-      if (payload.power_consumption !== undefined) insertData.power_consumption = payload.power_consumption;
-      if (payload.cody_cycle !== undefined) insertData.cody_cycle = payload.cody_cycle;
-      if (payload.model_code !== undefined) insertData.model_code = payload.model_code;
-      if (payload.tagline !== undefined) insertData.tagline = payload.tagline;
+      const { data, error } = await supabase
+        .from('products')
+        .insert([insertData])
+        .select()
+        .single();
 
-      let retries = 0;
-      const maxRetries = 20;
-      let lastError: any = null;
-
-      while (retries < maxRetries) {
-        const { data, error } = await supabase
-          .from('products')
-          .insert([insertData])
-          .select()
-          .single();
-
-        if (!error) {
-          return { success: true, data, message: `เพิ่มสินค้า "${payload.name}" สำเร็จ!` };
-        }
-
-        lastError = error;
-        console.warn(`[AdminProductService] Insert attempt ${retries + 1} error:`, error.message);
-
-        // Detect missing column from PostgREST error message
-        const missingColMatch = error.message.match(/Could not find the '([^']+)' column/i) || 
-                                error.message.match(/'([^']+)' column/i) ||
-                                error.message.match(/column '([^']+)'/i);
-
-        let strippedKey = false;
-        if (missingColMatch && missingColMatch[1]) {
-          const colName = missingColMatch[1];
-          if (colName in insertData) {
-            console.warn(`[AdminProductService] Stripping missing column '${colName}' from insert payload`);
-            delete insertData[colName];
-            strippedKey = true;
-          }
-        }
-
-        if (!strippedKey) {
-          // Fallback: check all non-core keys in insertData against error message
-          const coreKeys = ['name', 'price', 'image_url', 'description', 'category'];
-          for (const key of Object.keys(insertData)) {
-            if (coreKeys.includes(key)) continue;
-            if (error.message.includes(key)) {
-              console.warn(`[AdminProductService] Stripping missing key '${key}' from insert payload`);
-              delete insertData[key];
-              strippedKey = true;
-              break;
-            }
-          }
-        }
-
-        if (!strippedKey) {
-          // No recognizable column to strip, stop retry loop
-          break;
-        }
-
-        retries++;
+      if (error) {
+        return { success: false, message: `เพิ่มสินค้าไม่สำเร็จ: ${error.message}` };
       }
 
-      return { success: false, message: `เพิ่มสินค้าไม่สำเร็จ: ${lastError?.message || 'เกิดข้อผิดพลาดในการบันทึกข้อมูล'}` };
+      return { success: true, data, message: `เพิ่มสินค้า "${payload.name}" สำเร็จ!` };
     } catch (err: any) {
       return { success: false, message: `เกิดข้อผิดพลาด: ${err.message}` };
     }
@@ -157,18 +102,41 @@ class AdminProductService {
     }
 
     try {
+      const targetId = !isNaN(Number(id)) ? Number(id) : id;
       const sanitizedImages = payload.images ? payload.images.slice(0, 5) : undefined;
       const mainImageUrl = sanitizedImages?.[0] || payload.image_url;
 
       // Clean base description text
       const baseDesc = (payload.description || '').replace(/<!-- COWAY_EXTENDED_SPECS:[\s\S]*? -->/g, '').trim();
 
+      // Read existing specs if present to preserve other untouched metadata
+      let existingSpecs: Record<string, any> = {};
+      try {
+        const { data: currRow } = await supabase
+          .from('products')
+          .select('description')
+          .eq('id', targetId)
+          .maybeSingle();
+
+        if (currRow?.description && currRow.description.includes('<!-- COWAY_EXTENDED_SPECS:')) {
+          const match = currRow.description.match(/<!-- COWAY_EXTENDED_SPECS:([\s\S]*?) -->/);
+          if (match && match[1]) {
+            existingSpecs = JSON.parse(match[1]);
+          }
+        }
+      } catch (e) {
+        console.warn('[AdminProductService] Could not fetch current product specs:', e);
+      }
+
       // Extended metadata object to ensure persistence in 'description' column
-      const extendedSpecsObj: Record<string, any> = {};
+      const extendedSpecsObj: Record<string, any> = {
+        ...existingSpecs,
+      };
+
       if (sanitizedImages && sanitizedImages.length > 0) extendedSpecsObj.images = sanitizedImages;
-      if (payload.water_types) extendedSpecsObj.water_types = payload.water_types;
-      if (payload.subscription_options) extendedSpecsObj.subscription_options = payload.subscription_options;
-      if (payload.highlights) extendedSpecsObj.highlights = payload.highlights;
+      if (payload.water_types !== undefined) extendedSpecsObj.water_types = payload.water_types;
+      if (payload.subscription_options !== undefined) extendedSpecsObj.subscription_options = payload.subscription_options;
+      if (payload.highlights !== undefined) extendedSpecsObj.highlights = payload.highlights;
       if (payload.tank_capacity !== undefined) extendedSpecsObj.tank_capacity = payload.tank_capacity;
       if (payload.filtration_system !== undefined) extendedSpecsObj.filtration_system = payload.filtration_system;
       if (payload.coverage_area !== undefined) extendedSpecsObj.coverage_area = payload.coverage_area;
@@ -178,101 +146,64 @@ class AdminProductService {
       if (payload.cody_cycle !== undefined) extendedSpecsObj.cody_cycle = payload.cody_cycle;
       if (payload.model_code !== undefined) extendedSpecsObj.model_code = payload.model_code;
       if (payload.tagline !== undefined) extendedSpecsObj.tagline = payload.tagline;
+      if (payload.display_order !== undefined) {
+        extendedSpecsObj.display_order = payload.display_order;
+        extendedSpecsObj.order = payload.display_order;
+      }
 
       const descriptionWithSpecs = Object.keys(extendedSpecsObj).length > 0
         ? `${baseDesc}\n\n<!-- COWAY_EXTENDED_SPECS:${JSON.stringify(extendedSpecsObj)} -->`
         : baseDesc;
 
-      let updateData: any = {};
+      const updateData: any = {
+        description: descriptionWithSpecs,
+      };
       if (payload.name !== undefined) updateData.name = payload.name;
       if (payload.price !== undefined) updateData.price = Number(payload.price) || 0;
       if (mainImageUrl !== undefined) updateData.image_url = mainImageUrl;
-      if (payload.description !== undefined) updateData.description = descriptionWithSpecs;
       if (payload.category !== undefined) updateData.category = payload.category;
 
-      if (sanitizedImages) updateData.images = sanitizedImages;
-      if (payload.water_types) updateData.water_types = payload.water_types;
-      if (payload.subscription_options) updateData.subscription_options = payload.subscription_options;
-      if (payload.highlights) updateData.highlights = payload.highlights;
-      if (payload.tank_capacity !== undefined) updateData.tank_capacity = payload.tank_capacity;
-      if (payload.filtration_system !== undefined) updateData.filtration_system = payload.filtration_system;
-      if (payload.coverage_area !== undefined) updateData.coverage_area = payload.coverage_area;
-      if (payload.dimensions !== undefined) updateData.dimensions = payload.dimensions;
-      if (payload.weight !== undefined) updateData.weight = payload.weight;
-      if (payload.power_consumption !== undefined) updateData.power_consumption = payload.power_consumption;
-      if (payload.cody_cycle !== undefined) updateData.cody_cycle = payload.cody_cycle;
-      if (payload.model_code !== undefined) updateData.model_code = payload.model_code;
-      if (payload.tagline !== undefined) updateData.tagline = payload.tagline;
+      let { data, error } = await supabase
+        .from('products')
+        .update(updateData)
+        .eq('id', targetId)
+        .select();
 
-      let retries = 0;
-      const maxRetries = 20;
-      let lastError: any = null;
-
-      while (retries < maxRetries) {
-        const { error } = await supabase
+      // Fallback try with string ID if targetId didn't match
+      if (!error && (!data || data.length === 0) && typeof targetId !== 'string') {
+        const retryRes = await supabase
           .from('products')
           .update(updateData)
-          .eq('id', id);
-
-        if (!error) {
-          // Clean up removed images from Supabase Storage so no orphaned files accumulate
-          const oldList: string[] = Array.isArray(oldImages)
-            ? oldImages
-            : oldImages
-            ? [oldImages]
-            : [];
-          const currentList: string[] = sanitizedImages || (mainImageUrl ? [mainImageUrl] : []);
-
-          const removedUrls = oldList.filter((url) => url && !currentList.includes(url));
-          if (removedUrls.length > 0) {
-            storageService.deleteMultipleImagesByUrl(removedUrls).catch((err) => {
-              console.warn('[AdminProductService] Failed to clean up removed images from storage:', err);
-            });
-          }
-
-          return { success: true, message: 'บันทึกการแก้ไขสินค้าสำเร็จ!' };
-        }
-
-        lastError = error;
-        console.warn(`[AdminProductService] Update attempt ${retries + 1} error:`, error.message);
-
-        // Detect missing column from PostgREST error message
-        const missingColMatch = error.message.match(/Could not find the '([^']+)' column/i) || 
-                                error.message.match(/'([^']+)' column/i) ||
-                                error.message.match(/column '([^']+)'/i);
-
-        let strippedKey = false;
-        if (missingColMatch && missingColMatch[1]) {
-          const colName = missingColMatch[1];
-          if (colName in updateData) {
-            console.warn(`[AdminProductService] Stripping missing column '${colName}' from update payload`);
-            delete updateData[colName];
-            strippedKey = true;
-          }
-        }
-
-        if (!strippedKey) {
-          // Fallback: check all non-core keys in updateData against error message
-          const coreKeys = ['name', 'price', 'image_url', 'description', 'category'];
-          for (const key of Object.keys(updateData)) {
-            if (coreKeys.includes(key)) continue;
-            if (error.message.includes(key)) {
-              console.warn(`[AdminProductService] Stripping missing key '${key}' from update payload`);
-              delete updateData[key];
-              strippedKey = true;
-              break;
-            }
-          }
-        }
-
-        if (!strippedKey) {
-          break;
-        }
-
-        retries++;
+          .eq('id', String(id))
+          .select();
+        data = retryRes.data;
+        error = retryRes.error;
       }
 
-      return { success: false, message: `อัปเดตไม่สำเร็จ: ${lastError?.message || 'เกิดข้อผิดพลาดในการบันทึกข้อมูล'}` };
+      if (error) {
+        return { success: false, message: `อัปเดตไม่สำเร็จ: ${error.message}` };
+      }
+
+      if (!data || data.length === 0) {
+        return { success: false, message: `ไม่พบสินค้า ID ${id} ใน Supabase Database หรือไม่มีสิทธิ์แก้ไข` };
+      }
+
+      // Clean up removed images from Supabase Storage so no orphaned files accumulate
+      const oldList: string[] = Array.isArray(oldImages)
+        ? oldImages
+        : oldImages
+        ? [oldImages]
+        : [];
+      const currentList: string[] = sanitizedImages || (mainImageUrl ? [mainImageUrl] : []);
+
+      const removedUrls = oldList.filter((url) => url && !currentList.includes(url));
+      if (removedUrls.length > 0) {
+        storageService.deleteMultipleImagesByUrl(removedUrls).catch((err) => {
+          console.warn('[AdminProductService] Failed to clean up removed images from storage:', err);
+        });
+      }
+
+      return { success: true, message: 'บันทึกการแก้ไขสินค้าสำเร็จ!' };
     } catch (err: any) {
       return { success: false, message: `เกิดข้อผิดพลาด: ${err.message}` };
     }
@@ -280,6 +211,7 @@ class AdminProductService {
 
   /**
    * Update order/sequence of multiple products in Supabase
+   * Preserves all existing specs, highlights, and subscription options
    */
   async updateProductsOrder(
     orderedItems: { id: string; order: number; description?: string }[]
@@ -292,36 +224,51 @@ class AdminProductService {
 
     try {
       const updatePromises = orderedItems.map(async (item) => {
-        let updateData: any = { display_order: item.order };
+        const targetId = !isNaN(Number(item.id)) ? Number(item.id) : item.id;
 
-        if (item.description !== undefined) {
-          const baseDesc = (item.description || '').replace(/<!-- COWAY_EXTENDED_SPECS:[\s\S]*? -->/g, '').trim();
-          let extendedSpecsObj: any = {};
-          const match = (item.description || '').match(/<!-- COWAY_EXTENDED_SPECS:([\s\S]*?) -->/);
-          if (match && match[1]) {
-            try {
-              extendedSpecsObj = JSON.parse(match[1]);
-            } catch {}
+        // Fetch current row to preserve existing specs completely
+        let baseDesc = '';
+        let extendedSpecsObj: any = {};
+
+        try {
+          const { data: curr } = await client
+            .from('products')
+            .select('description')
+            .eq('id', targetId)
+            .maybeSingle();
+
+          const descSource = curr?.description || item.description || '';
+          if (descSource.includes('<!-- COWAY_EXTENDED_SPECS:')) {
+            const match = descSource.match(/<!-- COWAY_EXTENDED_SPECS:([\s\S]*?) -->/);
+            if (match && match[1]) {
+              try {
+                extendedSpecsObj = JSON.parse(match[1]);
+              } catch {}
+            }
           }
-          extendedSpecsObj.display_order = item.order;
-          extendedSpecsObj.order = item.order;
-          updateData.description = `${baseDesc}\n\n<!-- COWAY_EXTENDED_SPECS:${JSON.stringify(extendedSpecsObj)} -->`;
+          baseDesc = descSource.replace(/<!-- COWAY_EXTENDED_SPECS:[\s\S]*? -->/g, '').trim();
+        } catch {
+          baseDesc = (item.description || '').replace(/<!-- COWAY_EXTENDED_SPECS:[\s\S]*? -->/g, '').trim();
         }
+
+        extendedSpecsObj.display_order = item.order;
+        extendedSpecsObj.order = item.order;
+
+        const updateData: any = {
+          description: `${baseDesc}\n\n<!-- COWAY_EXTENDED_SPECS:${JSON.stringify(extendedSpecsObj)} -->`,
+        };
 
         let { error } = await client
           .from('products')
           .update(updateData)
-          .eq('id', item.id);
+          .eq('id', targetId);
 
-        if (error && error.message.includes('column')) {
-          delete updateData.display_order;
-          if (Object.keys(updateData).length > 0) {
-            const retryRes = await client
-              .from('products')
-              .update(updateData)
-              .eq('id', item.id);
-            error = retryRes.error;
-          }
+        if (error && typeof targetId !== 'string') {
+          const retryRes = await client
+            .from('products')
+            .update(updateData)
+            .eq('id', String(item.id));
+          error = retryRes.error;
         }
 
         if (error) {

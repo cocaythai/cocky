@@ -65,7 +65,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     if (currentOptions.length > 0) {
       setSelectedOption(currentOptions[0]);
     }
-  }, [product?.id, product?.subscriptionOptions]);
+  }, [product?.id, JSON.stringify(currentOptions)]);
 
   const activeOption = selectedOption || currentOptions[0];
 

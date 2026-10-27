@@ -31,6 +31,7 @@ export interface CowayProduct {
   category: ProductCategoryType;
   features: string[];
   isActive: boolean; // Controls whether product is published/visible
+  rawDescription?: string; // Full raw description containing embedded specs tag
 
   // Extended Domain Specification Fields
   modelCode: string;

@@ -154,7 +154,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
       const payload = orderedProducts.map((p, idx) => ({
         id: p.id,
         order: idx + 1,
-        description: p.description,
+        description: p.rawDescription || p.description,
       }));
       const res = await adminProductService.updateProductsOrder(payload);
       if (res.success) {
