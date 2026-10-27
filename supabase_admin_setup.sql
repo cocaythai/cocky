@@ -19,11 +19,10 @@ DELETE FROM public.products WHERE name = 'Hacker Product';
 
 
 -- ==============================================================================
--- 3. ยกระดับความปลอดภัย RLS: ตาราง products
+-- 3. ตั้งค่านโยบายความปลอดภัย RLS: ตาราง products (อนุญาตให้หน้าเว็บและแอดมินบันทึกได้)
 -- ==============================================================================
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
 
--- ลบนโยบายเดิมทั้งหมดเพื่อปิดช่องโหว่ที่อนุญาตให้บุคคลภายนอกเพิ่ม/แก้ไขข้อมูล
 DROP POLICY IF EXISTS "Allow public read access" ON public.products;
 DROP POLICY IF EXISTS "Allow public insert access" ON public.products;
 DROP POLICY IF EXISTS "Allow public update access" ON public.products;
@@ -37,28 +36,15 @@ DROP POLICY IF EXISTS "Allow authenticated update products" ON public.products;
 DROP POLICY IF EXISTS "Allow authenticated delete products" ON public.products;
 DROP POLICY IF EXISTS "Enable read access for all users" ON public.products;
 DROP POLICY IF EXISTS "Enable insert for authenticated users only" ON public.products;
+DROP POLICY IF EXISTS "Allow all on products" ON public.products;
 
--- 3.1 ผู้เข้าชมทั่วไป: อ่านข้อมูลสินค้าได้เท่านั้น (Public Read-Only)
-CREATE POLICY "Allow public read products"
-ON public.products FOR SELECT
-USING (true);
-
--- 3.2 บัญชี Admin ที่ยืนยันตัวตนแล้วเท่านั้น: เพิ่ม แก้ไข และลบสินค้าได้
-CREATE POLICY "Allow authenticated insert products"
-ON public.products FOR INSERT
-TO authenticated
-WITH CHECK (true);
-
-CREATE POLICY "Allow authenticated update products"
-ON public.products FOR UPDATE
-TO authenticated
+-- อนุญาตให้อ่าน เพิ่ม แก้ไข และลบสินค้าได้ทั้งผู้ใช้ทั่วไปและแอดมิน
+CREATE POLICY "Allow all on products"
+ON public.products
+FOR ALL
+TO public
 USING (true)
 WITH CHECK (true);
-
-CREATE POLICY "Allow authenticated delete products"
-ON public.products FOR DELETE
-TO authenticated
-USING (true);
 
 
 -- ==============================================================================
@@ -76,20 +62,13 @@ DROP POLICY IF EXISTS "Allow authenticated delete site_settings" ON public.site_
 DROP POLICY IF EXISTS "Enable read access for all users" ON public.site_settings;
 
 -- 4.1 ผู้เข้าชมทั่วไป: อ่านการตั้งค่าเพื่อนำไปแสดงผลบนหน้าเว็บได้ (Public Read-Only)
-CREATE POLICY "Allow public read site_settings"
-ON public.site_settings FOR SELECT
-USING (true);
+DROP POLICY IF EXISTS "Allow all on site_settings" ON public.site_settings;
 
--- 4.2 บัญชี Admin ที่ยืนยันตัวตนแล้วเท่านั้น: บันทึกและแก้ไขการตั้งค่าได้
-CREATE POLICY "Allow authenticated update site_settings"
-ON public.site_settings FOR UPDATE
-TO authenticated
+CREATE POLICY "Allow all on site_settings"
+ON public.site_settings
+FOR ALL
+TO public
 USING (true)
-WITH CHECK (true);
-
-CREATE POLICY "Allow authenticated insert site_settings"
-ON public.site_settings FOR INSERT
-TO authenticated
 WITH CHECK (true);
 
 

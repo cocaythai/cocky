@@ -53,19 +53,117 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   );
   const [copied, setCopied] = useState(false);
   const [activeImageIdx, setActiveImageIdx] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
 
-  // Get list of up to 5 images, fallback to single product.image
-  const allImages = (product.images && product.images.length > 0)
-    ? product.images.slice(0, 5)
-    : (product.image ? [product.image] : []);
+  // Extract all product images (up to 5) from any valid representation
+  const allImages = React.useMemo(() => {
+    if (!product) return [];
+
+    let list: string[] = [];
+    if (Array.isArray(product.images) && product.images.length > 0) {
+      list = product.images.filter((img) => typeof img === 'string' && img.trim().length > 0);
+    } else if (typeof product.images === 'string' && (product.images as string).trim()) {
+      try {
+        const parsed = JSON.parse(product.images);
+        if (Array.isArray(parsed)) {
+          list = parsed.filter((img) => typeof img === 'string' && img.trim().length > 0);
+        }
+      } catch {
+        list = (product.images as string).split(',').map((s) => s.trim()).filter(Boolean);
+      }
+    }
+
+    // Also check rawDescription for embedded specs if list has <= 1 image
+    if (list.length <= 1 && product.rawDescription && product.rawDescription.includes('<!-- COWAY_EXTENDED_SPECS:')) {
+      try {
+        const match = product.rawDescription.match(/<!-- COWAY_EXTENDED_SPECS:([\s\S]*?) -->/);
+        if (match && match[1]) {
+          const specs = JSON.parse(match[1]);
+          if (Array.isArray(specs?.images) && specs.images.length > 0) {
+            const specList = specs.images.filter((img: any) => typeof img === 'string' && img.trim().length > 0);
+            if (specList.length > 0) {
+              list = specList;
+            }
+          }
+        }
+      } catch {}
+    }
+
+    // Make sure primary image is included if not present
+    if (product.image && typeof product.image === 'string' && product.image.trim()) {
+      if (!list.includes(product.image)) {
+        list.unshift(product.image);
+      }
+    }
+
+    // Deduplicate while preserving order and limit to 5
+    const unique = Array.from(new Set(list)).slice(0, 5);
+    return unique.length > 0 ? unique : (product.image ? [product.image] : []);
+  }, [product]);
 
   // Sync active image index and selected option whenever opened product or options change
   React.useEffect(() => {
     setActiveImageIdx(0);
+    setIsPaused(false);
     if (currentOptions.length > 0) {
       setSelectedOption(currentOptions[0]);
     }
   }, [product?.id, JSON.stringify(currentOptions)]);
+
+  // Auto-slide carousel every 5 seconds (5000ms)
+  React.useEffect(() => {
+    if (allImages.length <= 1 || isPaused) return;
+
+    const timer = setInterval(() => {
+      setActiveImageIdx((prev) => (prev + 1) % allImages.length);
+    }, 5000);
+
+    return () => clearInterval(timer);
+  }, [allImages.length, isPaused, activeImageIdx]);
+
+  // Keyboard navigation for image slider
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (allImages.length <= 1) return;
+      if (e.key === 'ArrowLeft') {
+        setActiveImageIdx((prev) => (prev > 0 ? prev - 1 : allImages.length - 1));
+      } else if (e.key === 'ArrowRight') {
+        setActiveImageIdx((prev) => (prev < allImages.length - 1 ? prev + 1 : 0));
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [allImages.length]);
+
+  const handleNextImage = () => {
+    if (allImages.length <= 1) return;
+    setActiveImageIdx((prev) => (prev < allImages.length - 1 ? prev + 1 : 0));
+  };
+
+  const handlePrevImage = () => {
+    if (allImages.length <= 1) return;
+    setActiveImageIdx((prev) => (prev > 0 ? prev - 1 : allImages.length - 1));
+  };
+
+  // Touch swipe handling
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStartX(e.touches[0].clientX);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX === null || allImages.length <= 1) return;
+    const touchEndX = e.changedTouches[0].clientX;
+    const diff = touchStartX - touchEndX;
+    if (Math.abs(diff) > 40) {
+      if (diff > 0) {
+        handleNextImage();
+      } else {
+        handlePrevImage();
+      }
+    }
+    setTouchStartX(null);
+  };
 
   const activeOption = selectedOption || currentOptions[0];
 
@@ -125,15 +223,22 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         <div className="overflow-y-auto p-6 sm:p-8 space-y-8">
           {/* Top Two Column Layout: Image + Buying Box */}
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
-            {/* Left: Product Image Gallery */}
-            <div className="md:col-span-6 bg-slate-50 rounded-2xl p-4 sm:p-6 flex flex-col items-center justify-center border border-slate-100 relative group">
+            {/* Left: Product Image Gallery with 5s Auto-slide and Navigation */}
+            <div
+              className="md:col-span-6 bg-slate-50 rounded-2xl p-4 sm:p-6 flex flex-col items-center justify-center border border-slate-100 relative group"
+              onMouseEnter={() => setIsPaused(true)}
+              onMouseLeave={() => setIsPaused(false)}
+              onTouchStart={handleTouchStart}
+              onTouchEnd={handleTouchEnd}
+            >
               {/* Main Image Viewport */}
               <div className="relative w-full aspect-square sm:max-h-[340px] flex items-center justify-center overflow-hidden">
                 <img
+                  key={activeImageIdx}
                   src={activeImage}
                   alt={`${product.name} รูปที่ ${activeImageIdx + 1}`}
                   referrerPolicy="no-referrer"
-                  className="w-full h-full object-contain drop-shadow-md transition-all duration-300"
+                  className="w-full h-full object-contain drop-shadow-md transition-all duration-300 animate-in fade-in"
                   decoding="async"
                   onError={(e) => {
                     (e.currentTarget as HTMLImageElement).src =
@@ -146,32 +251,59 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   <>
                     <button
                       type="button"
-                      onClick={() => setActiveImageIdx((prev) => (prev > 0 ? prev - 1 : allImages.length - 1))}
+                      onClick={handlePrevImage}
                       aria-label="รูปก่อนหน้า"
-                      className="absolute left-1 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 hover:bg-white text-slate-700 shadow-md flex items-center justify-center transition-all hover:scale-110 cursor-pointer focus:outline-hidden"
+                      title="รูปก่อนหน้า (ปุ่มลูกศรซ้าย)"
+                      className="absolute left-1 sm:left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/95 hover:bg-white text-slate-700 shadow-md flex items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer z-10 focus:outline-hidden"
                     >
                       <ChevronLeft className="w-5 h-5" />
                     </button>
                     <button
                       type="button"
-                      onClick={() => setActiveImageIdx((prev) => (prev < allImages.length - 1 ? prev + 1 : 0))}
+                      onClick={handleNextImage}
                       aria-label="รูปถัดไป"
-                      className="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 hover:bg-white text-slate-700 shadow-md flex items-center justify-center transition-all hover:scale-110 cursor-pointer focus:outline-hidden"
+                      title="รูปถัดไป (ปุ่มลูกศรขวา)"
+                      className="absolute right-1 sm:right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/95 hover:bg-white text-slate-700 shadow-md flex items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer z-10 focus:outline-hidden"
                     >
                       <ChevronRight className="w-5 h-5" />
                     </button>
 
-                    {/* Counter Badge */}
-                    <div className="absolute top-2 right-2 bg-slate-900/70 backdrop-blur-xs text-white text-[11px] font-semibold px-2.5 py-0.5 rounded-full font-mono">
-                      {activeImageIdx + 1} / {allImages.length}
+                    {/* Counter Badge & Auto-slide Indicator */}
+                    <div className="absolute top-2 right-2 bg-slate-900/75 backdrop-blur-xs text-white text-[11px] font-semibold px-2.5 py-1 rounded-full font-mono flex items-center gap-1.5 shadow-xs z-10">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      <span>{activeImageIdx + 1} / {allImages.length}</span>
+                    </div>
+
+                    {/* Auto-slide Status Pill */}
+                    <div className="absolute bottom-2 left-2 bg-slate-900/60 backdrop-blur-xs text-white/90 text-[10px] font-medium px-2 py-0.5 rounded-md pointer-events-none transition-opacity duration-200">
+                      {isPaused ? 'หยุดชั่วคราว' : 'เลื่อนอัตโนมัติทุก 5 วิ'}
                     </div>
                   </>
                 )}
               </div>
 
+              {/* Dot Indicators (When > 1 image) */}
+              {allImages.length > 1 && (
+                <div className="flex items-center justify-center gap-1.5 mt-3">
+                  {allImages.map((_, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setActiveImageIdx(idx)}
+                      aria-label={`ไปที่รูปที่ ${idx + 1}`}
+                      className={`h-2 rounded-full transition-all cursor-pointer ${
+                        activeImageIdx === idx
+                          ? 'w-6 bg-sky-600'
+                          : 'w-2 bg-slate-300 hover:bg-slate-400'
+                      }`}
+                    />
+                  ))}
+                </div>
+              )}
+
               {/* Thumbnails Strip (Only when > 1 image) */}
               {allImages.length > 1 && (
-                <div className="mt-3.5 w-full flex items-center justify-center gap-2 overflow-x-auto py-1">
+                <div className="mt-2.5 w-full flex items-center justify-center gap-2 overflow-x-auto py-1 scrollbar-thin">
                   {allImages.map((imgUrl, idx) => (
                     <button
                       key={idx}
@@ -188,6 +320,10 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                         src={imgUrl}
                         alt={`ภาพย่อ ${idx + 1}`}
                         className="w-full h-full object-contain"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).src =
+                            'https://images.unsplash.com/photo-1548839140-29a749e1bc4e?auto=format&fit=crop&w=600&q=80';
+                        }}
                       />
                       {idx === 0 && (
                         <span className="absolute bottom-0 inset-x-0 bg-sky-600/90 text-[8px] text-white text-center font-bold py-0.2 leading-tight">
@@ -198,7 +334,6 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   ))}
                 </div>
               )}
-
             </div>
 
             {/* Right: Product Details & Subscription Selector */}

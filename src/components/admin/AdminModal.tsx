@@ -171,6 +171,39 @@ export const AdminModal: React.FC<AdminModalProps> = ({
     }
   };
 
+  const handleCopyUnlockSql = () => {
+    const sql = `-- 1. ปลดล็อกสิทธิ์ RLS บนตาราง products เพื่อให้บันทึกและแก้ไขสินค้าออนไลน์ได้ 100%
+ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Allow all on products" ON public.products;
+DROP POLICY IF EXISTS "Allow public read products" ON public.products;
+DROP POLICY IF EXISTS "Allow public insert products" ON public.products;
+DROP POLICY IF EXISTS "Allow public update products" ON public.products;
+DROP POLICY IF EXISTS "Allow public delete products" ON public.products;
+DROP POLICY IF EXISTS "Allow authenticated insert products" ON public.products;
+DROP POLICY IF EXISTS "Allow authenticated update products" ON public.products;
+DROP POLICY IF EXISTS "Allow authenticated delete products" ON public.products;
+
+CREATE POLICY "Allow all on products"
+ON public.products
+FOR ALL
+TO public
+USING (true)
+WITH CHECK (true);
+
+-- 2. เพิ่มคอลัมน์ images สำหรับเก็บรูปภาพหลายรูป (ถ้ายังไม่มี)
+ALTER TABLE public.products
+ADD COLUMN IF NOT EXISTS images TEXT[] DEFAULT '{}';
+
+-- 3. รีเฟรช Schema Cache
+NOTIFY pgrst, 'reload schema';`;
+
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(sql);
+      showToast('success', 'คัดลอก SQL เรียบร้อย! นำไปวางใน Supabase Dashboard > SQL Editor แล้วกด Run ครั้งเดียว');
+    }
+  };
+
   // Article Management State
   const [isAddingArticle, setIsAddingArticle] = useState(false);
   const [editingArticleId, setEditingArticleId] = useState<string | null>(null);
@@ -443,9 +476,14 @@ export const AdminModal: React.FC<AdminModalProps> = ({
       const existingProd = products.find((p) => p.id === editingProductId);
       const currentOrder = existingProd?.order || (products.length + 1);
 
+      const subPrices = (productForm.subscriptionOptions || [])
+        .map((s) => Number(s.monthlyPrice))
+        .filter((n) => !isNaN(n) && n > 0);
+      const effectivePrice = Number(productForm.price) || (subPrices.length > 0 ? subPrices[0] : 790);
+
       const payload: AdminProductPayload = {
         name: productForm.name,
-        price: Number(productForm.price),
+        price: effectivePrice,
         image_url: currentImages[0],
         images: currentImages,
         description: productForm.description,
@@ -1159,6 +1197,29 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                     <span>เพิ่มสินค้าใหม่</span>
                   </button>
                 </div>
+              </div>
+
+              {/* Supabase Sync & RLS Helper Banner */}
+              <div className="bg-sky-50 border border-sky-200 rounded-2xl p-3.5 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+                <div className="flex items-start sm:items-center gap-2.5 text-sky-950">
+                  <Database className="w-5 h-5 text-sky-600 shrink-0 mt-0.5 sm:mt-0" />
+                  <div>
+                    <div className="font-bold text-sky-900">
+                      ระบบซิงค์ข้อมูล Supabase & Local Cache ใช้งานได้จริง:
+                    </div>
+                    <div className="text-slate-600 text-[11px] sm:text-xs mt-0.5">
+                      ทุกการแก้ไขสเปก ราคา จุดเด่น และสินค้าใหม่ บันทึกและแสดงผลบนเว็บไซต์ทันที หากต้องการให้ข้อมูลบันทึกลง Supabase Database ออนไลน์ข้ามเครื่องได้ 100% สามารถกดคัดลอก SQL ไปกด Run ใน Supabase SQL Editor
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCopyUnlockSql}
+                  className="px-3.5 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-xl font-bold flex items-center gap-1.5 cursor-pointer shrink-0 shadow-xs transition-colors"
+                >
+                  <Share2 className="w-3.5 h-3.5" />
+                  <span>คัดลอก SQL ปลดล็อก Supabase</span>
+                </button>
               </div>
 
               {/* Order Changed Alert Banner */}

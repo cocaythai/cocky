@@ -1,6 +1,7 @@
 import { CowayProduct, ProductFilterParams, ProductCategory } from '../types/index.ts';
 import { MOCK_PRODUCTS } from '../data/mockProducts';
 import { supabase, isSupabaseConfigured, getSupabaseConfigStatus } from './supabaseClient';
+import { localProductStorage } from './localProductStorage';
 
 // Fallback image asset for mapped products if image_url is missing
 import defaultFallbackImg from '../assets/images/coway_neo_plus_1790923072942.jpg';
@@ -37,7 +38,19 @@ function mapSupabaseRowToProduct(row: any, index: number): CowayProduct {
 
   // Extract up to 5 images from row.images (array or json string) or embeddedSpecs.images, fallback to image_url / image
   let imagesList: string[] = [];
-  const rawImages = row.images || embeddedSpecs?.images;
+  
+  // Safely check candidate sources in order of richness
+  let rawImages: any = null;
+  if (Array.isArray(row.images) && row.images.length > 0) {
+    rawImages = row.images;
+  } else if (Array.isArray(embeddedSpecs?.images) && embeddedSpecs.images.length > 0) {
+    rawImages = embeddedSpecs.images;
+  } else if (typeof row.images === 'string' && row.images.trim()) {
+    rawImages = row.images;
+  } else if (typeof embeddedSpecs?.images === 'string' && embeddedSpecs.images.trim()) {
+    rawImages = embeddedSpecs.images;
+  }
+
   if (Array.isArray(rawImages) && rawImages.length > 0) {
     imagesList = rawImages.filter((img: any) => typeof img === 'string' && img.trim().length > 0).slice(0, 5);
   } else if (typeof rawImages === 'string' && rawImages.trim()) {
@@ -47,14 +60,26 @@ function mapSupabaseRowToProduct(row: any, index: number): CowayProduct {
         imagesList = parsed.filter((img: any) => typeof img === 'string' && img.trim().length > 0).slice(0, 5);
       }
     } catch {
-      imagesList = [rawImages.trim()];
+      imagesList = rawImages.split(',').map((s: string) => s.trim()).filter(Boolean).slice(0, 5);
+    }
+  }
+
+  // Also check if embeddedSpecs had images that weren't captured
+  if (imagesList.length <= 1 && Array.isArray(embeddedSpecs?.images) && embeddedSpecs.images.length > 1) {
+    const specImages = embeddedSpecs.images.filter((img: any) => typeof img === 'string' && img.trim().length > 0);
+    if (specImages.length > 1) {
+      imagesList = specImages.slice(0, 5);
     }
   }
 
   const defaultImg = index % 2 === 0 ? defaultFallbackImg : myIceFallbackImg;
   const primaryImage = imagesList[0] || row.image_url || row.image || defaultImg;
 
-  if (imagesList.length === 0 && primaryImage) {
+  // Make sure primaryImage is present in imagesList
+  if (primaryImage && !imagesList.includes(primaryImage)) {
+    imagesList.unshift(primaryImage);
+    imagesList = imagesList.slice(0, 5);
+  } else if (imagesList.length === 0 && primaryImage) {
     imagesList = [primaryImage];
   }
 
@@ -268,8 +293,10 @@ class ProductService {
         if (error) {
           console.warn('[ProductService] Supabase query error:', error.message);
           const isTableMissing = error.code === 'PGRST205' || error.message.includes('schema cache');
+          const localOnly = localProductStorage.applyToProducts([]);
+          const filtered = this.applyLocalFilters(localOnly, params);
           return {
-            products: [],
+            products: filtered,
             source: 'supabase',
             supabaseCount: 0,
             message: isTableMissing
@@ -281,7 +308,8 @@ class ProductService {
         if (data && data.length > 0) {
           // Successfully fetched from Supabase table 'products'!
           const mapped = data.map((row, idx) => mapSupabaseRowToProduct(row, idx));
-          const filtered = this.applyLocalFilters(mapped, params);
+          const withLocal = localProductStorage.applyToProducts(mapped);
+          const filtered = this.applyLocalFilters(withLocal, params);
           return {
             products: filtered,
             source: 'supabase',
@@ -290,8 +318,10 @@ class ProductService {
           };
         } else {
           // Supabase connected but table has 0 rows
+          const localOnly = localProductStorage.applyToProducts([]);
+          const filtered = this.applyLocalFilters(localOnly, params);
           return {
-            products: [],
+            products: filtered,
             source: 'supabase',
             supabaseCount: 0,
             message: 'เชื่อมต่อ Supabase สำเร็จ แต่ยังไม่มีข้อมูลในตาราง products (0 รายการ) สามารถกดปุ่มเพิ่มข้อมูลตัวอย่างด้านล่างได้',
@@ -299,8 +329,10 @@ class ProductService {
         }
       } catch (err: any) {
         console.error('[ProductService] Network exception fetching from Supabase:', err);
+        const localOnly = localProductStorage.applyToProducts([]);
+        const filtered = this.applyLocalFilters(localOnly, params);
         return {
-          products: [],
+          products: filtered,
           source: 'supabase',
           supabaseCount: 0,
           message: `ไม่สามารถติดต่อ Supabase ได้: ${err.message}`,
@@ -326,9 +358,15 @@ class ProductService {
   }
 
   /**
-   * Fetch single product by ID
+   * Fetch single product by ID (checks local overrides first, then Supabase, then mock)
    */
   async getProductById(id: string): Promise<CowayProduct | null> {
+    const strId = String(id);
+    const overrides = localProductStorage.getOverrides();
+    if (overrides[strId]) {
+      return overrides[strId];
+    }
+
     if (isSupabaseConfigured() && supabase) {
       try {
         const { data, error } = await supabase
@@ -408,7 +446,8 @@ class ProductService {
    * Helper to filter mock dataset
    */
   private filterMockProducts(params?: ProductFilterParams): CowayProduct[] {
-    let results = [...MOCK_PRODUCTS];
+    const rawMock = MOCK_PRODUCTS.map((p, idx) => ({ ...p, order: p.order || idx + 1 }));
+    let results = localProductStorage.applyToProducts(rawMock);
 
     if (params?.activeOnly !== false) {
       results = results.filter((p) => p.isActive);

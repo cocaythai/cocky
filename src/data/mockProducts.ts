@@ -4,6 +4,10 @@ import { CowayProduct } from '../types';
 import imgNeoPlus from '../assets/images/coway_neo_plus_1790923072942.jpg';
 import imgMyIce from '../assets/images/coway_my_ice_1790923084460.jpg';
 import imgAirNoble from '../assets/images/coway_air_noble_1790923095907.jpg';
+import imgCodyService from '../assets/images/coway_cody_service_1790923106865.jpg';
+import imgKitchenHero from '../assets/images/hero_coway_kitchen_1790923059004.jpg';
+import imgWaterHealth from '../assets/images/health_water_ro_1790957089308.jpg';
+import imgAirPm25 from '../assets/images/health_air_pm25_1790957100930.jpg';
 
 /**
  * Central Product Data Repository
@@ -99,6 +103,7 @@ export const MOCK_PRODUCTS: CowayProduct[] = [
     description: 'Coway My Ice ยกระดับการใช้ชีวิตอย่างพรีเมียม เครื่องกรองน้ำที่รวมเครื่องทำน้ำแข็งและเครื่องกดน้ำ 3 อุณหภูมิไว้ในเครื่องเดียว ผลิตน้ำแข็งบริสุทธิ์ได้วันละกว่า 5.4 กก. พร้อมระบบ UV Sterilization ฉายแสงฆ่าเชื้อที่หัวจ่ายน้ำและถังเก็บน้ำแข็งอัตโนมัติ ให้คุณมั่นใจในสุขอนามัยสูงสุด',
     price: 1290,
     image: imgMyIce,
+    images: [imgMyIce, imgNeoPlus, imgAirNoble, imgCodyService],
     category: 'water',
     features: [
       'ผลิตน้ำแข็งสะอาดจากน้ำที่ผ่านการกรอง บริสุทธิ์ ปลอดภัย 100%',
@@ -178,6 +183,7 @@ export const MOCK_PRODUCTS: CowayProduct[] = [
     description: 'Coway Villaem II ออกแบบมาเพื่อบ้านที่มีสมาชิก 4-8 คน หรือสำนักงานขนาดย่อม มีถังบรรจุน้ำขนาดใหญ่ถึง 11.3 ลิตร พร้อมฟังก์ชันน้ำอุ่นสำหรับชงนมเด็กหรือจิบยามเช้า และปุ่มหมุนปรับอุณหภูมิได้อย่างแม่นยำ พร้อมระบบกรอง RO มาตรฐานสูงระดับสากล',
     price: 990,
     image: imgNeoPlus,
+    images: [imgNeoPlus, imgMyIce, imgWaterHealth, imgCodyService],
     category: 'water',
     features: [
       'ถังน้ำขนาดใหญ่พิเศษ 11.3 ลิตร รองรับการใช้งานต่อเนื่อง',
@@ -242,6 +248,7 @@ export const MOCK_PRODUCTS: CowayProduct[] = [
     description: 'Coway Cinnamon เป็นเครื่องกรองน้ำไซส์กะทัดรัดที่ได้รับรางวัลการออกแบบระดับโลก ด้วยความกว้างเพียง 20 ซม. วางบนเคาน์เตอร์คอนโดหรือครัวขนาดเล็กได้อย่างลงตัว ระบบน้ำอุณหภูมิห้องที่ช่วยให้ดื่มน้ำได้บ่อย สุขภาพดี ถังน้ำ 5.0 ลิตร กรองด้วยระบบ RO บริสุทธิ์ 100%',
     price: 490,
     image: imgNeoPlus,
+    images: [imgNeoPlus, imgKitchenHero, imgMyIce],
     category: 'water',
     features: [
       'ตัวเครื่องบางเพียง 20 ซม. วางได้ทุกมุมครัวและห้องนอน',
@@ -308,6 +315,7 @@ export const MOCK_PRODUCTS: CowayProduct[] = [
     description: 'Coway Prime โดดเด่นด้วยระบบทำความเย็นกำลังสูง เหมาะกับเมืองร้อนอย่างประเทศไทย ให้คุณได้ดื่มน้ำเย็นฉ่ำสดชื่นทันใจตลอดเวลา ตัวเครื่องดีไซน์พรีเมียมสีทูโทนทันสมัย พร้อมฟังก์ชันน้ำร้อนชงกาแฟยามเช้า และน้ำดื่มบริสุทธิ์เพื่อทุกคนในครอบครัว',
     price: 890,
     image: imgNeoPlus,
+    images: [imgNeoPlus, imgMyIce, imgKitchenHero],
     category: 'water',
     features: [
       'คอมเพรสเซอร์ทำความเย็นประสิทธิภาพสูง เย็นเร็ว คงที่',
@@ -365,6 +373,7 @@ export const MOCK_PRODUCTS: CowayProduct[] = [
     description: 'Coway Core ถูกออกแบบมาเพื่อพื้นที่สาธารณะ ออฟฟิศขนาดกลางถึงใหญ่ ฟิตเนส คลินิก หรือร้านอาหาร ถังบรรจุน้ำขนาดมหึมา 21.1 ลิตร ไม่ต้องกลัวน้ำหมดระหว่างวัน ตัวเครื่องตั้งพื้นทรงสูง แข็งแรงทนทาน มีระบบควบคุมระดับน้ำอัตโนมัติ และระบบกรอง RO ขจัดตะกรันและสารพิษได้อย่างหมดจด',
     price: 1290,
     image: imgNeoPlus,
+    images: [imgNeoPlus, imgCodyService, imgWaterHealth],
     category: 'water',
     features: [
       'ถังน้ำขนาดยักษ์ 21.1 ลิตร รองรับ 20-50 คน',
@@ -422,6 +431,7 @@ export const MOCK_PRODUCTS: CowayProduct[] = [
     description: 'Coway Gracie คือรุ่นเรือธงที่โดดเด่นด้วยจอควบคุม Full Touch Screen พร้อมไฟบอกสถานะ สามารถเลือกอุณหภูมิน้ำได้ละเอียดถึง 8 ระดับ (รวมถึงอุณหภูมิเฉพาะสำหรับชงนมเด็ก กาแฟ ชาเขียว หรือปรุงอาหาร) พร้อมระบบกรอง Nanotrap กรองเร็ว สดใหม่ทุกแก้ว',
     price: 1190,
     image: imgNeoPlus,
+    images: [imgNeoPlus, imgMyIce, imgKitchenHero, imgCodyService],
     category: 'water',
     features: [
       'ปรับอุณหภูมิน้ำได้ 8 ระดับแม่นยำด้วยระบบดิจิทัล',
@@ -479,6 +489,7 @@ export const MOCK_PRODUCTS: CowayProduct[] = [
     description: 'สำหรับใครที่อยากได้น้ำร้อนและน้ำเย็น แต่มีพื้นที่จำกัด Coway Petit คือคำตอบที่ลงตัว ด้วยขนาดที่เล็กกว่ารุ่นทั่วไป 30% แต่มีระบบความปลอดภัย และระบบกรองน้ำ 5 ขั้นตอน ได้น้ำดื่มสะอาด สดชื่น ปราศจากกลิ่นไม่พึงประสงค์',
     price: 690,
     image: imgNeoPlus,
+    images: [imgNeoPlus, imgKitchenHero, imgMyIce],
     category: 'water',
     features: [
       'ขนาดกะทัดรัด ประหยัดพื้นที่เคาน์เตอร์',
@@ -537,6 +548,7 @@ export const MOCK_PRODUCTS: CowayProduct[] = [
     description: 'Coway Noble ไม่ใช่แค่เครื่องฟอกอากาศ แต่เป็นงานศิลปะชิ้นเอกในบ้านคุณ ได้รับรางวัลการออกแบบระดับโลก ดีไซน์ทรงทาวเวอร์เรียบหรู พร้อมเทคโนโลยีดูดอากาศ 360 องศา และปล่อยอากาศบริสุทธิ์ได้รอบทิศทาง 4D ฟิลเตอร์ 4 ชั้นพิเศษ กรองฝุ่นละเอียดถึง 0.01 ไมครอน และกำจัดไวรัส เชื้อรา แบคทีเรียด้วยแสง UVC',
     price: 1290,
     image: imgAirNoble,
+    images: [imgAirNoble, imgAirPm25, imgCodyService, imgKitchenHero],
     category: 'air',
     features: [
       'การออกแบบสถาปัตยกรรมระดับ Masterpiece เข้าได้กับทุกสไตล์ห้อง',
@@ -608,6 +620,7 @@ export const MOCK_PRODUCTS: CowayProduct[] = [
     description: 'Coway Storm เป็นเครื่องฟอกอากาศรุ่นยอดนิยมขวัญใจคนเลี้ยงสัตว์และผู้ที่เป็นภูมิแพ้ ด้วยพลังลมทรงพลัง ส่งลมไกลถึง 6 เมตร หมุนเวียนอากาศภายในห้องได้รวดเร็วภายในเวลาไม่กี่นาที ระบบกรอง 4 ชั้นพร้อม HEPA Filter แท้ ขจัดฝุ่น PM2.5 ควัน ละอองเกสรดอกไม้ และกลิ่นไม่พึงประสงค์ได้อย่างมีประสิทธิภาพ',
     price: 790,
     image: imgAirNoble,
+    images: [imgAirNoble, imgAirPm25, imgCodyService],
     category: 'air',
     features: [
       'ใบพัดลมปรับทิศทางได้ 3 รูปแบบ (ลมพุ่งไกล, ลมมุมกว้าง, ลมหมุนเวียน)',
@@ -671,6 +684,7 @@ export const MOCK_PRODUCTS: CowayProduct[] = [
     description: 'Coway Lombok III ออกแบบมาเพื่อผู้ที่มีปัญหาภูมิแพ้เรื้อรังและเด็กเล็ก ด้วยระบบ RBD Plasma (Resistive Barrier Discharge) ที่สามารถทำลายผนังเซลล์ของไวรัสและเชื้อแบคทีเรียในอากาศได้อย่างเด็ดขาด ไส้กรองพิเศษ 6 ชั้นช่วยขจัดกลิ่นอับ ไรฝุ่น ก๊าซพิษ และเชื้อรา',
     price: 990,
     image: imgAirNoble,
+    images: [imgAirNoble, imgAirPm25, imgKitchenHero],
     category: 'air',
     features: [
       'ระบบ RBD Plasma ปล่อยประจุทำลายเชื้อโรคและไวรัสในอากาศ',
@@ -727,6 +741,7 @@ export const MOCK_PRODUCTS: CowayProduct[] = [
     description: 'สำหรับบ้านเดี่ยว ห้องรับแขกขนาดใหญ่ หรือโถงออฟฟิศ Coway Platform 600 มาพร้อมโครงสร้างมอเตอร์และฟิลเตอร์คู่ซ้ายขวา (Dual Suction & Dual Filter) ทำให้อากาศผ่านการกรองปริมาณมหาศาลต่อนาที กรองอากาศสะอาดได้อย่างรวดเร็วในพื้นที่กว้างถึง 80 ตร.ม.',
     price: 1190,
     image: imgAirNoble,
+    images: [imgAirNoble, imgAirPm25, imgCodyService],
     category: 'air',
     features: [
       'ชุดกรองคู่ Dual Filter ซ้าย-ขวา ประสิทธิภาพฟอกอากาศคูณสอง',
@@ -783,6 +798,7 @@ export const MOCK_PRODUCTS: CowayProduct[] = [
     description: 'Coway Breeze คือตัวเลือกยอดเยี่ยมสำหรับห้องนอนหรือห้องทำงานขนาด 33 ตร.ม. ตัวเครื่องบางเฉียบ ประหยัดพื้นที่ ปล่อยระดับเสียงต่ำมากในโหมด Silent ไม่รบกวนการนอนหลับ กรองฝุ่น ควัน ละอองเกสรได้อย่างมีประสิทธิภาพ',
     price: 590,
     image: imgAirNoble,
+    images: [imgAirNoble, imgAirPm25, imgKitchenHero],
     category: 'air',
     features: [
       'น้ำหนักเบา ตัวเครื่องบางเพียง 18 ซม.',
@@ -840,6 +856,7 @@ export const MOCK_PRODUCTS: CowayProduct[] = [
     description: 'เปลี่ยนห้องน้ำธรรมดาให้กลายเป็นสปาส่วนตัวด้วย Coway Smart Bidet BA-35A ฝารองนั่งชำระล้างอัตโนมัติพร้อมระบบทำน้ำอุ่นทันใจ หัวฉีดสเตนเลสแท้ฆ่าเชื้อด้วยประจุเงิน (Silver Nano) ปรับตำแหน่งหัวฉีดและแรงดันน้ำได้ตามต้องการ พร้อมฟังก์ชันเป่าแห้งด้วยลมอุ่นและเบาะนั่งอุ่นสบายยามเช้า',
     price: 590,
     image: imgNeoPlus,
+    images: [imgNeoPlus, imgCodyService, imgKitchenHero],
     category: 'bidet',
     features: [
       'หัวฉีดสเตนเลสสตีลพร้อมระบบล้างตัวเองอัตโนมัติก่อนและหลังใช้งาน',
