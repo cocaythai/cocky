@@ -273,11 +273,6 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                       <span>{activeImageIdx + 1} / {allImages.length}</span>
                     </div>
-
-                    {/* Auto-slide Status Pill */}
-                    <div className="absolute bottom-2 left-2 bg-slate-900/60 backdrop-blur-xs text-white/90 text-[10px] font-medium px-2 py-0.5 rounded-md pointer-events-none transition-opacity duration-200">
-                      {isPaused ? 'หยุดชั่วคราว' : 'เลื่อนอัตโนมัติทุก 5 วิ'}
-                    </div>
                   </>
                 )}
               </div>
