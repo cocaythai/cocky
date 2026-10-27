@@ -28,3 +28,46 @@ html {
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
+/* Slow Blinking / Breathing Animation for Attention Call & LINE buttons */
+@keyframes slowBlinkLine {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 4px 14px rgba(6, 199, 85, 0.3);
+  }
+  50% {
+    opacity: 0.78;
+    transform: scale(1.025);
+    box-shadow: 0 0 20px rgba(6, 199, 85, 0.65);
+  }
+}
+
+@keyframes slowBlinkCall {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.25);
+  }
+  50% {
+    opacity: 0.78;
+    transform: scale(1.025);
+    box-shadow: 0 0 20px rgba(15, 23, 42, 0.55);
+  }
+}
+
+.animate-slow-blink-line {
+  animation: slowBlinkLine 2.4s ease-in-out infinite;
+}
+
+.animate-slow-blink-call {
+  animation: slowBlinkCall 2.4s ease-in-out infinite;
+  animation-delay: 0.5s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-slow-blink-line,
+  .animate-slow-blink-call {
+    animation: none;
+  }
+}

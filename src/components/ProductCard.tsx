@@ -121,12 +121,15 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
           {/* Key Bullets (2 max) */}
           <ul className="pt-1 space-y-1 text-xs text-slate-500">
-            {product.keyFeatures.slice(0, 2).map((feat, idx) => (
-              <li key={idx} className="flex items-start gap-1.5 truncate">
-                <Check className="w-3.5 h-3.5 text-sky-600 shrink-0 mt-0.5" />
-                <span className="truncate">{feat}</span>
-              </li>
-            ))}
+            {product.keyFeatures
+              .filter((feat) => !feat.includes('ระบบกรองน้ำมาตรฐานสากล ขจัดสารปนเปื้อน 99.99%'))
+              .slice(0, 2)
+              .map((feat, idx) => (
+                <li key={idx} className="flex items-start gap-1.5 truncate">
+                  <Check className="w-3.5 h-3.5 text-sky-600 shrink-0 mt-0.5" />
+                  <span className="truncate">{feat}</span>
+                </li>
+              ))}
           </ul>
         </div>
 

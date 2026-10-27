@@ -105,7 +105,7 @@ function mapSupabaseRowToProduct(row: any, index: number): CowayProduct {
     image: primaryImage,
     images: imagesList.length > 0 ? imagesList : [primaryImage],
     category: (row.category as any) || 'water',
-    features: Array.isArray(row.features)
+    features: (Array.isArray(row.features)
       ? row.features
       : typeof row.features === 'string'
       ? (() => {
@@ -116,10 +116,10 @@ function mapSupabaseRowToProduct(row: any, index: number): CowayProduct {
           }
         })()
       : [
-          'ระบบกรองน้ำมาตรฐานสากล ขจัดสารปนเปื้อน 99.99%',
           'บริการ Cody Heart Service ดูแลฟรีตลอดอายุสัญญา',
           'ประหยัดพลังงาน เป็นมิตรต่อสิ่งแวดล้อม',
-        ],
+        ]
+    ).filter((f: any) => typeof f === 'string' && !f.includes('ระบบกรองน้ำมาตรฐานสากล ขจัดสารปนเปื้อน 99.99%')),
     isActive: row.is_active !== false,
 
     // Extended domain specifications with graceful fallbacks (embeddedSpecs priority for live Admin edits)
@@ -216,13 +216,13 @@ function mapSupabaseRowToProduct(row: any, index: number): CowayProduct {
     codyCycle: embeddedSpecs?.cody_cycle !== undefined && embeddedSpecs?.cody_cycle !== null && String(embeddedSpecs.cody_cycle).trim() !== ''
       ? String(embeddedSpecs.cody_cycle)
       : (row.cody_cycle || row.codyCycle || 'ทำความสะอาดฆ่าเชื้อถังทุก 2 เดือน / เปลี่ยนไส้กรองทุก 4 เดือน'),
-    keyFeatures: Array.isArray(row.features)
+    keyFeatures: (Array.isArray(row.features)
       ? row.features
       : [
-          'ระบบกรองน้ำมาตรฐานสากล ขจัดสารปนเปื้อน 99.99%',
           'บริการ Cody Heart Service ดูแลฟรีตลอดอายุสัญญา',
           'ประหยัดพลังงาน เป็นมิตรต่อสิ่งแวดล้อม',
-        ],
+        ]
+    ).filter((f: any) => typeof f === 'string' && !f.includes('ระบบกรองน้ำมาตรฐานสากล ขจัดสารปนเปื้อน 99.99%')),
     highlights: (() => {
       let raw = embeddedSpecs?.highlights ?? row.highlights;
       if (typeof raw === 'string' && raw.trim()) {

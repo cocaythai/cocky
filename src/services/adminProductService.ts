@@ -96,11 +96,10 @@ class AdminProductService {
       images: sanitizedImages.length > 0 ? sanitizedImages : [mainImageUrl],
       category,
       categoryLabel,
-      features: existing?.features || [
-        'ระบบกรองน้ำมาตรฐานสากล ขจัดสารปนเปื้อน 99.99%',
+      features: (existing?.features || [
         'บริการ Cody Heart Service ดูแลฟรีตลอดอายุสัญญา',
         'ประหยัดพลังงาน เป็นมิตรต่อสิ่งแวดล้อม',
-      ],
+      ]).filter((f: any) => typeof f === 'string' && !f.includes('ระบบกรองน้ำมาตรฐานสากล ขจัดสารปนเปื้อน 99.99%')),
       isActive: true,
       modelCode: payload.model_code || existing?.modelCode || `CHP-${String(id).padStart(3, '0')}`,
       tagline: payload.tagline || existing?.tagline || 'นวัตกรรมเพื่อสุขภาพ ดื่มน้ำสะอาดสดชื่นทุกวัน',
@@ -117,11 +116,10 @@ class AdminProductService {
       weight: payload.weight !== undefined ? payload.weight : (existing?.weight || '18.0 กก.'),
       powerConsumption: payload.power_consumption !== undefined ? payload.power_consumption : (existing?.powerConsumption || 'ความร้อน 300W / ความเย็น 0.7A'),
       codyCycle: payload.cody_cycle !== undefined ? payload.cody_cycle : (existing?.codyCycle || 'ทำความสะอาดฆ่าเชื้อถังทุก 2 เดือน / เปลี่ยนไส้กรองทุก 4 เดือน'),
-      keyFeatures: existing?.keyFeatures || [
-        'ระบบกรองน้ำมาตรฐานสากล ขจัดสารปนเปื้อน 99.99%',
+      keyFeatures: (existing?.keyFeatures || [
         'บริการ Cody Heart Service ดูแลฟรีตลอดอายุสัญญา',
         'ประหยัดพลังงาน เป็นมิตรต่อสิ่งแวดล้อม',
-      ],
+      ]).filter((f: any) => typeof f === 'string' && !f.includes('ระบบกรองน้ำมาตรฐานสากล ขจัดสารปนเปื้อน 99.99%')),
       highlights,
       isPopular: existing?.isPopular !== undefined ? existing.isPopular : true,
       isNew: existing?.isNew || false,

@@ -316,7 +316,7 @@ export default function App() {
             href={siteSettings.lineUrl || "https://line.me"}
             target="_blank"
             rel="noopener noreferrer"
-            className="relative w-13 h-13 rounded-2xl bg-[#06c755] hover:bg-[#05b34c] text-white shadow-xl flex items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer"
+            className="relative w-13 h-13 rounded-2xl bg-[#06c755] hover:bg-[#05b34c] text-white shadow-xl flex items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer animate-slow-blink-line"
             title="แอด LINE สอบถามโปรโมชั่น"
           >
             <MessageCircle className="w-6 h-6 animate-pulse" />
@@ -333,7 +333,7 @@ export default function App() {
 
           <a
             href={`tel:${siteSettings.phoneNumber || '0992215445'}`}
-            className="relative w-13 h-13 rounded-2xl bg-black hover:bg-slate-800 text-white shadow-xl flex items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer"
+            className="relative w-13 h-13 rounded-2xl bg-black hover:bg-slate-800 text-white shadow-xl flex items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer animate-slow-blink-call"
             title={`โทรติดต่อด่วน ${siteSettings.phoneDisplay || '099-221-5445'}`}
           >
             <Phone className="w-5 h-5 animate-pulse" />

@@ -18,21 +18,21 @@ export const MobileStickyBar: React.FC<MobileStickyBarProps> = ({
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200/80 px-4 py-2.5 shadow-lg safe-area-bottom">
       <div className="flex items-center justify-between gap-2 max-w-md mx-auto">
-        {/* Call Quick Action - Black */}
+        {/* Call Quick Action - Black with Slow Blinking */}
         <a
           href={`tel:${siteSettings?.phoneNumber || '0992215445'}`}
-          className="flex-1 min-h-[44px] py-2 px-3 bg-black hover:bg-slate-800 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs active:scale-95"
+          className="relative flex-1 min-h-[44px] py-2 px-3 bg-black hover:bg-slate-800 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95 animate-slow-blink-call overflow-hidden"
         >
-          <Phone className="w-3.5 h-3.5 text-white" />
+          <Phone className="w-3.5 h-3.5 text-white animate-pulse" />
           <span>โทรด่วน</span>
         </a>
 
-        {/* LINE Chat Action - Green with Pulsing Indicator */}
+        {/* LINE Chat Action - Green with Slow Blinking */}
         <a
           href={siteSettings?.lineUrl || "https://line.me"}
           target="_blank"
           rel="noopener noreferrer"
-          className="relative flex-1 min-h-[44px] py-2 px-3 bg-[#06c755] hover:bg-[#05b34c] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-95 overflow-hidden"
+          className="relative flex-1 min-h-[44px] py-2 px-3 bg-[#06c755] hover:bg-[#05b34c] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95 animate-slow-blink-line overflow-hidden"
         >
           {/* Pulsing radar dot indicator */}
           <span className="absolute top-1.5 right-2 flex h-2 w-2">
