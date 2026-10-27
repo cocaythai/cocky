@@ -35,9 +35,21 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 }) => {
   if (!product) return null;
 
-  // Selected subscription option (default to first/popular)
+  const currentOptions = (product.subscriptionOptions && product.subscriptionOptions.length > 0)
+    ? product.subscriptionOptions
+    : [
+        {
+          years: 5,
+          monthlyPrice: product.startingMonthlyPrice || product.price || 790,
+          label: 'สัญญา 5 ปี (แนะนำ)',
+          badge: 'ยอดนิยม',
+          codyService: 'ดูแลฟรี 5 ปีเต็ม ทำความสะอาดทุก 2 เดือน เปลี่ยนไส้กรองทุก 4 เดือน',
+        },
+      ];
+
+  // Selected subscription option
   const [selectedOption, setSelectedOption] = useState<SubscriptionOption>(
-    product.subscriptionOptions[0]
+    currentOptions[0]
   );
   const [copied, setCopied] = useState(false);
   const [activeImageIdx, setActiveImageIdx] = useState(0);
@@ -47,10 +59,15 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     ? product.images.slice(0, 5)
     : (product.image ? [product.image] : []);
 
-  // Reset active image index whenever opened product changes
+  // Sync active image index and selected option whenever opened product or options change
   React.useEffect(() => {
     setActiveImageIdx(0);
-  }, [product?.id]);
+    if (currentOptions.length > 0) {
+      setSelectedOption(currentOptions[0]);
+    }
+  }, [product?.id, product?.subscriptionOptions]);
+
+  const activeOption = selectedOption || currentOptions[0];
 
   const activeImage = allImages[activeImageIdx] || product.image;
 
@@ -63,7 +80,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const lineChatUrl = siteSettings?.lineUrl || 'https://line.me/ti/p/~@cowaythailand';
 
   const handleLineClick = () => {
-    const textToCopy = `สวัสดีครับ/ค่ะ สนใจสั่งซื้อสินค้า Coway รุ่น ${product.name} (${product.modelCode}) แพ็กเกจ ${selectedOption.label} ราคา ฿${selectedOption.monthlyPrice.toLocaleString()}/เดือน ขอทราบโปรโมชั่นพิเศษและคิวติดตั้งครับ`;
+    const textToCopy = `สวัสดีครับ/ค่ะ สนใจสั่งซื้อสินค้า Coway รุ่น ${product.name} (${product.modelCode}) แพ็กเกจ ${activeOption.label} ราคา ฿${activeOption.monthlyPrice.toLocaleString()}/เดือน ขอทราบโปรโมชั่นพิเศษและคิวติดตั้งครับ`;
     if (navigator.clipboard) {
       navigator.clipboard.writeText(textToCopy).catch(() => {});
     }
@@ -205,8 +222,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 </div>
 
                 <div className="space-y-2">
-                  {product.subscriptionOptions.map((opt, i) => {
-                    const isSelected = selectedOption.years === opt.years;
+                  {currentOptions.map((opt, i) => {
+                    const isSelected = activeOption.label === opt.label || activeOption.years === opt.years;
                     return (
                       <div
                         key={i}
@@ -268,7 +285,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
                 <div className="grid grid-cols-2 gap-2">
                   <button
-                    onClick={() => onAddToInquiry(product, selectedOption)}
+                    onClick={() => onAddToInquiry(product, activeOption)}
                     className="py-3 px-3 bg-sky-50 hover:bg-sky-100 text-sky-700 font-semibold text-xs rounded-xl transition-colors flex items-center justify-center gap-1.5 border border-sky-200 cursor-pointer"
                   >
                     <ShoppingBag className="w-3.5 h-3.5" />

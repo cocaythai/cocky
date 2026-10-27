@@ -96,8 +96,8 @@ function mapSupabaseRowToProduct(row: any, index: number): CowayProduct {
         ],
     isActive: row.is_active !== false,
 
-    // Extended domain specifications with graceful fallbacks
-    modelCode: row.model_code || embeddedSpecs?.model_code || `CHP-${String(id).padStart(3, '0')}`,
+    // Extended domain specifications with graceful fallbacks (embeddedSpecs priority for live Admin edits)
+    modelCode: embeddedSpecs?.model_code || row.model_code || `CHP-${String(id).padStart(3, '0')}`,
     categoryLabel:
       row.category_label ||
       (row.category === 'air'
@@ -107,7 +107,7 @@ function mapSupabaseRowToProduct(row: any, index: number): CowayProduct {
         : row.category === 'mattress'
         ? 'เก้าอี้นวด'
         : 'เครื่องกรองน้ำ'),
-    tagline: row.tagline || embeddedSpecs?.tagline || 'นวัตกรรมเพื่อสุขภาพ ดื่มน้ำสะอาดสดชื่นทุกวัน',
+    tagline: embeddedSpecs?.tagline || row.tagline || 'นวัตกรรมเพื่อสุขภาพ ดื่มน้ำสะอาดสดชื่นทุกวัน',
     shortDesc:
       row.short_desc ||
       cleanDescription ||
@@ -116,18 +116,24 @@ function mapSupabaseRowToProduct(row: any, index: number): CowayProduct {
       row.full_desc ||
       cleanDescription ||
       `${name} มาพร้อมมาตรฐานระดับสากล ผ่านการรับรอง WQA Gold Seal และระบบกรองบริสุทธิ์เพื่อทุกคนในครอบครัว`,
-    startingMonthlyPrice: numericPrice,
-    cashPrice: Number(row.cash_price) || (numericPrice > 0 ? numericPrice * 45 : 38900),
     subscriptionOptions: (() => {
-      const rawSub = row.subscription_options || embeddedSpecs?.subscription_options;
-      if (Array.isArray(rawSub) && rawSub.length > 0) {
-        return rawSub;
-      }
-      if (typeof rawSub === 'string' && rawSub.trim()) {
+      let raw = embeddedSpecs?.subscription_options ?? row.subscription_options;
+      if (typeof raw === 'string' && raw.trim()) {
         try {
-          const parsed = JSON.parse(rawSub);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+          raw = JSON.parse(raw);
         } catch {}
+      }
+      if (Array.isArray(raw) && raw.length > 0) {
+        return raw;
+      }
+      let fallbackRaw = row.subscription_options;
+      if (typeof fallbackRaw === 'string' && fallbackRaw.trim()) {
+        try {
+          fallbackRaw = JSON.parse(fallbackRaw);
+        } catch {}
+      }
+      if (Array.isArray(fallbackRaw) && fallbackRaw.length > 0) {
+        return fallbackRaw;
       }
       return [
         {
@@ -146,14 +152,39 @@ function mapSupabaseRowToProduct(row: any, index: number): CowayProduct {
         },
       ];
     })(),
-    waterTypes: row.water_types || embeddedSpecs?.water_types || ['hot', 'cold', 'room'],
-    tankCapacity: row.tank_capacity || row.tankCapacity || embeddedSpecs?.tank_capacity || '5.8 ลิตร',
-    filtrationSystem: row.filtration_system || row.filtrationSystem || embeddedSpecs?.filtration_system || 'Coway RO Membrane 6 ขั้นตอน',
-    coverageArea: row.coverage_area || row.coverageArea || embeddedSpecs?.coverage_area,
-    dimensions: row.dimensions || embeddedSpecs?.dimensions || '260 x 505 x 500 มม.',
-    weight: row.weight || embeddedSpecs?.weight || '18.0 กก.',
-    powerConsumption: row.power_consumption || row.powerConsumption || embeddedSpecs?.power_consumption || 'ความร้อน 300W / ความเย็น 0.7A',
-    codyCycle: row.cody_cycle || row.codyCycle || embeddedSpecs?.cody_cycle || 'ทำความสะอาดฆ่าเชื้อถังทุก 2 เดือน / เปลี่ยนไส้กรองทุก 4 เดือน',
+    startingMonthlyPrice: (() => {
+      let rawSub = embeddedSpecs?.subscription_options ?? row.subscription_options;
+      if (typeof rawSub === 'string' && rawSub.trim()) {
+        try { rawSub = JSON.parse(rawSub); } catch {}
+      }
+      if (Array.isArray(rawSub) && rawSub.length > 0 && typeof rawSub[0].monthlyPrice === 'number') {
+        return rawSub[0].monthlyPrice;
+      }
+      return numericPrice;
+    })(),
+    cashPrice: Number(row.cash_price) || (numericPrice > 0 ? numericPrice * 45 : 38900),
+    waterTypes: embeddedSpecs?.water_types || row.water_types || ['hot', 'cold', 'room'],
+    tankCapacity: embeddedSpecs?.tank_capacity !== undefined && embeddedSpecs?.tank_capacity !== null && String(embeddedSpecs.tank_capacity).trim() !== ''
+      ? String(embeddedSpecs.tank_capacity)
+      : (row.tank_capacity || row.tankCapacity || '5.8 ลิตร'),
+    filtrationSystem: embeddedSpecs?.filtration_system !== undefined && embeddedSpecs?.filtration_system !== null && String(embeddedSpecs.filtration_system).trim() !== ''
+      ? String(embeddedSpecs.filtration_system)
+      : (row.filtration_system || row.filtrationSystem || 'Coway RO Membrane 6 ขั้นตอน'),
+    coverageArea: embeddedSpecs?.coverage_area !== undefined && embeddedSpecs?.coverage_area !== null && String(embeddedSpecs.coverage_area).trim() !== ''
+      ? String(embeddedSpecs.coverage_area)
+      : (row.coverage_area || row.coverageArea),
+    dimensions: embeddedSpecs?.dimensions !== undefined && embeddedSpecs?.dimensions !== null && String(embeddedSpecs.dimensions).trim() !== ''
+      ? String(embeddedSpecs.dimensions)
+      : (row.dimensions || '260 x 505 x 500 มม.'),
+    weight: embeddedSpecs?.weight !== undefined && embeddedSpecs?.weight !== null && String(embeddedSpecs.weight).trim() !== ''
+      ? String(embeddedSpecs.weight)
+      : (row.weight || '18.0 กก.'),
+    powerConsumption: embeddedSpecs?.power_consumption !== undefined && embeddedSpecs?.power_consumption !== null && String(embeddedSpecs.power_consumption).trim() !== ''
+      ? String(embeddedSpecs.power_consumption)
+      : (row.power_consumption || row.powerConsumption || 'ความร้อน 300W / ความเย็น 0.7A'),
+    codyCycle: embeddedSpecs?.cody_cycle !== undefined && embeddedSpecs?.cody_cycle !== null && String(embeddedSpecs.cody_cycle).trim() !== ''
+      ? String(embeddedSpecs.cody_cycle)
+      : (row.cody_cycle || row.codyCycle || 'ทำความสะอาดฆ่าเชื้อถังทุก 2 เดือน / เปลี่ยนไส้กรองทุก 4 เดือน'),
     keyFeatures: Array.isArray(row.features)
       ? row.features
       : [
@@ -162,15 +193,23 @@ function mapSupabaseRowToProduct(row: any, index: number): CowayProduct {
           'ประหยัดพลังงาน เป็นมิตรต่อสิ่งแวดล้อม',
         ],
     highlights: (() => {
-      const rawHighlights = row.highlights || embeddedSpecs?.highlights;
-      if (Array.isArray(rawHighlights) && rawHighlights.length > 0) {
-        return rawHighlights;
-      }
-      if (typeof rawHighlights === 'string' && rawHighlights.trim()) {
+      let raw = embeddedSpecs?.highlights ?? row.highlights;
+      if (typeof raw === 'string' && raw.trim()) {
         try {
-          const parsed = JSON.parse(rawHighlights);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+          raw = JSON.parse(raw);
         } catch {}
+      }
+      if (Array.isArray(raw) && raw.length > 0) {
+        return raw;
+      }
+      let fallbackRaw = row.highlights;
+      if (typeof fallbackRaw === 'string' && fallbackRaw.trim()) {
+        try {
+          fallbackRaw = JSON.parse(fallbackRaw);
+        } catch {}
+      }
+      if (Array.isArray(fallbackRaw) && fallbackRaw.length > 0) {
+        return fallbackRaw;
       }
       return [
         {

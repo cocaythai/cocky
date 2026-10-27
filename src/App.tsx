@@ -90,6 +90,16 @@ export default function App() {
     seedSampleProducts,
   } = useProducts();
 
+  // Keep selectedProduct in sync with live updated products array
+  React.useEffect(() => {
+    if (selectedProduct && products.length > 0) {
+      const updated = products.find((p) => p.id === selectedProduct.id);
+      if (updated) {
+        setSelectedProduct(updated);
+      }
+    }
+  }, [products]);
+
   // Consume dynamic site settings from Supabase
   const {
     settings: siteSettings,
